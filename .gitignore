@@ -1,18 +1,29 @@
-# Python-generated files
+# Byte-compiled files
 __pycache__/
-*.py[oc]
-build/
-wheels/
-*.egg-info
+*.py[co]
 
-# Project files
-.venv
-.idea/
-.DS_Store
-.env
-.vscode/
+# IDE
+/.idea/
+/.vscode/*
+!/.vscode/settings.json
 
-# Temporary files
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache
+coverage.xml
+.pytest_cache/
+
+# Environments
+/.env
+/.venv
+/env/
+/venv/
+
+# Temporary / log files
 *.log
 *.tmp
-*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
