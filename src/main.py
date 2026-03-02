@@ -1,7 +1,7 @@
 import os
+import subprocess
 import sys
 from abc import ABC, abstractmethod
-import subprocess
 
 
 class Linter(ABC):
