@@ -5,14 +5,12 @@ import subprocess
 
 
 class Linter(ABC):
-
 	@abstractmethod
 	def run(self, file_path: str):
 		pass
 
 
 class PylintWrapper(Linter):
-
 	def run(self, file_path: str):
 		process = subprocess.run(
 			['pylint', '--score=n', file_path],
@@ -20,7 +18,6 @@ class PylintWrapper(Linter):
 			text=True,
 			check=False
 		)
-
 		return process.stdout
 
 
