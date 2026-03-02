@@ -13,7 +13,7 @@ class Linter(ABC):
 class PylintWrapper(Linter):
 	def run(self, file_path: str):
 		process = subprocess.run(
-			['pylint', '--score=n', file_path],
+			['pylint', '--score=n', '--disable=bad-indentation,missing-final-newline', file_path],
 			capture_output=True,
 			text=True,
 			check=False
