@@ -2,12 +2,11 @@ import os
 import subprocess
 import sys
 from abc import ABC, abstractmethod
-from typing import Tuple
 
 
 class Linter(ABC):
 	@abstractmethod
-	def run(self, file_path: str) -> Tuple[str | None, str | None, int]:
+	def run(self, file_path: str):
 		pass
 
 
@@ -20,11 +19,10 @@ class PylintWrapper(Linter):
 			check=False
 		)
 		if process.returncode == 1:
-			if process.stderr is not None and process.stderr != '':
-				raise RuntimeError(f'Pylint analyse finished with Fatal error: {process.stderr}')
-			else:
-				raise RuntimeError(f'Pylint analyse finished with Fatal error')
-		return process.stdout, process.stderr, process.returncode
+			print('Pylint analysis finished with Fatal error (return code 1)')
+		if process.stderr:
+			print(f'Pylint analysis finished with non-empty error output:\n{process.stderr}')
+		return process.stdout
 
 
 class LinterFactory:
@@ -47,17 +45,11 @@ def main():
 	file_to_check = sys.argv[1]
 	try:
 		linter_instance = LinterFactory.get_linter(file_to_check)
-		result, stderr, return_code = linter_instance.run(file_to_check)
-		if stderr is not None and stderr != '':
-			print(f'Linter anasyse finished with error message: {stderr}')
-		if result is not None:
-			print(result)
-		print(f'Returned code: {return_code}')
-	except RuntimeError as e:
-		print(f'Critical error: {e}')
-		sys.exit(1)
+		result = linter_instance.run(file_to_check)
+		print(result)
 	except Exception as e:
 		print(f'Error: {e}')
+		sys.exit(1)
 
 
 if __name__ == '__main__':
