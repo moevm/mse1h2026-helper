@@ -1,7 +1,10 @@
+import argparse
 import os
 import subprocess
 import sys
+import tempfile
 from abc import ABC, abstractmethod
+from .github import login, load_pr, fetch_pull_request
 
 
 class Linter(ABC):
@@ -38,15 +41,27 @@ class LinterFactory:
 
 
 def main():
-	if len(sys.argv) < 2:
-		print(f'Usage: {sys.argv[0]} <file_path>')
+	parser = argparse.ArgumentParser(usage="python main.py [OPTIONS] PULL_REQUEST_URL", description="Helper for linting Pull Requests")
+	parser.add_argument('--token', help='Токен GitHub')
+	parser.add_argument('--severity', choices=['error', 'warning', 'note'], help='Минимальная серьёзность проблемы для вывода')
+	parser.add_argument('--pylint', help='Параметры для линтера Pylint')
+	parser.add_argument('--oclint', help='Параметры для линтера OCLint')
+	parser.add_argument('pr_url', metavar='PULL_REQUEST_URL', help='Ссылка на PR')
+	if len(sys.argv) == 1:
+		parser.print_help()
 		sys.exit(1)
-
-	file_to_check = sys.argv[1]
+	args = parser.parse_args()
 	try:
-		linter_instance = LinterFactory.get_linter(file_to_check)
-		result = linter_instance.run(file_to_check)
-		print(result)
+		g = login(token=args.token)
+		pr = fetch_pull_request(g, args.pr_url)
+		with tempfile.TemporaryDirectory() as tmpdir:
+			all_files = load_pr(pr, tmpdir)
+			if not all_files:
+				raise Exception('В PR нет подходящих для анализа файлов .')
+			for file_path in all_files:
+				linter = LinterFactory.get_linter(file_path)
+				result = linter.run(file_path)
+				print(result)
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)
