@@ -1,16 +1,16 @@
 name: Python Tests
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: python:3.11-slim
+      image: python:3.14.3-slim
 
     steps:
       - name: Checkout repository
@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pytest
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt; fi
 
       - name: Run tests
           run: pytest -vv --capture=no
