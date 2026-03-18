@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
-from io import StringIO
 import os
 import sys
+from abc import ABC, abstractmethod
+from io import StringIO
 
 from pylint.lint import pylinter, Run
 from pylint.reporters.text import TextReporter
@@ -19,12 +19,11 @@ class PylintWrapper(Linter):
 		pylint_output = StringIO()
 		reporter = TextReporter(pylint_output)
 		try:
-			runner = Run([file_path, '--score=n', '--disable=bad-indentation,missing-final-newline'],
+			runner = Run(
+				[file_path, '--score=n', '--disable=bad-indentation,missing-final-newline'],
 				reporter=reporter,
 				exit=False
-				)
-			if runner.linter.msg_status & 1:
-				print('Pylint analysis finished with Fatal error (return code 1)')
+			)
 		except Exception as e:
 			return f'Pylint API Error: {str(e)}'
 		return pylint_output.getvalue()
