@@ -3,14 +3,11 @@ import os
 import sys
 import tempfile
 from abc import ABC, abstractmethod
-<<<<<<< HEAD
 from io import StringIO
-
 from pylint.lint import pylinter, Run
 from pylint.reporters.text import TextReporter
-=======
-from .github import login, load_pr, fetch_pull_request
->>>>>>> e27ccc3 (Реализована аутентификация и загрузка PR с GitHub)
+
+from .github_modules import login, get_pull_request_metadata, download_pull_request_files
 
 
 class Linter(ABC):
@@ -25,11 +22,7 @@ class PylintWrapper(Linter):
 		pylint_output = StringIO()
 		reporter = TextReporter(pylint_output)
 		try:
-			runner = Run(
-				[file_path, '--score=n', '--disable=bad-indentation,missing-final-newline'],
-				reporter=reporter,
-				exit=False
-			)
+			runner = Run([file_path, '--score=n', '--disable=bad-indentation,missing-final-newline'], reporter=reporter, exit=False)
 		except Exception as e:
 			return f'Pylint API Error: {str(e)}'
 		return pylint_output.getvalue()
@@ -59,12 +52,14 @@ def main():
 		sys.exit(1)
 	args = parser.parse_args()
 	try:
-		g = login(token=args.token)
-		pr = fetch_pull_request(g, args.pr_url)
+		if args.severity or args.pylint or args.oclint:
+			raise NotImplementedError("Функциональность еще не реализована")
+		g = login(args.token)
+		pr = get_pull_request_metadata(g, args.pr_url)
 		with tempfile.TemporaryDirectory() as tmpdir:
-			all_files = load_pr(pr, tmpdir)
+			all_files = download_pull_request_files(pr, tmpdir)
 			if not all_files:
-				raise Exception('В PR нет подходящих для анализа файлов .')
+				raise Exception('В PR нет подходящих для анализа файлов.')
 			for file_path in all_files:
 				linter = LinterFactory.get_linter(file_path)
 				result = linter.run(file_path)

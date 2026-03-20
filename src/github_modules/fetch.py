@@ -1,9 +1,10 @@
 import os
-from ..config import SUPPORTED_EXTENSIONS
 from github import Github, PullRequest
 
+from ..config import SUPPORTED_EXTENSIONS
 
-def fetch_pull_request(g: Github, pr_url: str) -> PullRequest:
+
+def get_pull_request_metadata(g: Github, pr_url: str) -> PullRequest:
 	path = pr_url.replace('https://github.com', '').strip('/')
 	parts = path.split('/')
 	try:
@@ -16,7 +17,7 @@ def fetch_pull_request(g: Github, pr_url: str) -> PullRequest:
 	return repo.get_pull(pr_number)
 
 
-def load_pr(pr: PullRequest, local_dir: str):
+def download_pull_request_files(pr: PullRequest, local_dir: str):
 	repo = pr.base.repo
 	branch_sha = pr.head.sha
 	downloaded_paths = []
