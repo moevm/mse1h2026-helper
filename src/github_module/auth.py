@@ -1,4 +1,4 @@
-from github import Github, Auth
+from github import Auth, Github
 
 
 def login(token: str) -> Github:

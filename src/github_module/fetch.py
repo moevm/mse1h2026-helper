@@ -1,4 +1,5 @@
 import os
+
 from github import Github, PullRequest
 
 from ..config import SUPPORTED_EXTENSIONS
@@ -12,8 +13,8 @@ def get_pull_request_metadata(g: Github, pr_url: str) -> PullRequest:
 		pr_index = parts.index('pull') + 1
 		pr_number = int(parts[pr_index])
 	except (IndexError, ValueError):
-		raise ValueError(f"Invalid GitHub PR URL: {pr_url}")
-	repo = g.get_repo(f"{owner}/{repo_name}")
+		raise ValueError(f'Invalid GitHub PR URL: {pr_url}')
+	repo = g.get_repo(f'{owner}/{repo_name}')
 	return repo.get_pull(pr_number)
 
 

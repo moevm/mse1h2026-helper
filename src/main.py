@@ -22,7 +22,11 @@ class PylintWrapper(Linter):
 		pylint_output = StringIO()
 		reporter = TextReporter(pylint_output)
 		try:
-			runner = Run([file_path, '--score=n', '--disable=bad-indentation,missing-final-newline'], reporter=reporter, exit=False)
+			runner = Run(
+				[file_path, '--score=n', '--disable=bad-indentation,missing-final-newline'],
+				reporter=reporter,
+				exit=False
+			)
 		except Exception as e:
 			return f'Pylint API Error: {str(e)}'
 		return pylint_output.getvalue()
@@ -41,7 +45,7 @@ class LinterFactory:
 
 
 def main():
-	parser = argparse.ArgumentParser(usage="python main.py [OPTIONS] PULL_REQUEST_URL", description="Helper for linting Pull Requests")
+	parser = argparse.ArgumentParser(usage='python main.py [OPTIONS] PULL_REQUEST_URL', description='Helper for linting Pull Requests')
 	parser.add_argument('--token', help='Токен GitHub')
 	parser.add_argument('--severity', choices=['error', 'warning', 'note'], help='Минимальная серьёзность проблемы для вывода')
 	parser.add_argument('--pylint', help='Параметры для линтера Pylint')
@@ -53,13 +57,13 @@ def main():
 	args = parser.parse_args()
 	try:
 		if args.severity or args.pylint or args.oclint:
-			raise NotImplementedError("Функциональность еще не реализована")
+			raise NotImplementedError('Функциональность ещё не реализована')
 		g = login(args.token)
 		pr = get_pull_request_metadata(g, args.pr_url)
 		with tempfile.TemporaryDirectory() as tmpdir:
 			all_files = download_pull_request_files(pr, tmpdir)
 			if not all_files:
-				raise Exception('В PR нет подходящих для анализа файлов.')
+				raise Exception('В PR нет подходящих для анализа файлов')
 			for file_path in all_files:
 				linter = LinterFactory.get_linter(file_path)
 				result = linter.run(file_path)
