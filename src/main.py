@@ -2,46 +2,9 @@ import argparse
 import os
 import sys
 import tempfile
-from abc import ABC, abstractmethod
-from io import StringIO
-from pylint.lint import pylinter, Run
-from pylint.reporters.text import TextReporter
 
 from .github_module import login, get_pull_request_metadata, download_pull_request_files
-
-
-class Linter(ABC):
-	@abstractmethod
-	def run(self, file_path: str):
-		pass
-
-
-class PylintWrapper(Linter):
-	def run(self, file_path: str):
-		pylinter.MANAGER.clear_cache()
-		pylint_output = StringIO()
-		reporter = TextReporter(pylint_output)
-		try:
-			runner = Run(
-				[file_path, '--score=n', '--disable=bad-indentation,missing-final-newline'],
-				reporter=reporter,
-				exit=False
-			)
-		except Exception as e:
-			return f'Pylint API Error: {str(e)}'
-		return pylint_output.getvalue()
-
-
-class LinterFactory:
-	_linters = {'.py': PylintWrapper()}
-
-	@classmethod
-	def get_linter(cls, file_path: str) -> Linter:
-		_, ext = os.path.splitext(file_path)
-		linter = cls._linters.get(ext)
-		if not linter:
-			raise ValueError(f'No linter for file {ext}')
-		return linter
+from .linters import LinterFactory
 
 
 def main():
@@ -66,8 +29,9 @@ def main():
 				raise Exception('В PR нет подходящих для анализа файлов')
 			for file_path in all_files:
 				linter = LinterFactory.get_linter(file_path)
-				result = linter.run(file_path)
-				print(result)
+				messages = linter.run(file_path)
+				for m in messages:
+					print(f"{m.path}:{m.line}: [{m.msg_id}({m.symbol}), Object:'{m.obj}'] {m.msg}")
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)
