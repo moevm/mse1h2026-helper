@@ -1,5 +1,6 @@
 from pylint.lint import pylinter, Run
 from pylint.reporters import CollectingReporter
+
 from .base import Linter
 
 

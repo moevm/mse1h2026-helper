@@ -30,11 +30,8 @@ def main():
 			for file_path in all_files:
 				linter = LinterFactory.get_linter(file_path)
 				messages = linter.run(file_path)
-				if isinstance(messages, str):
-					print(messages)
-				else:
-					for m in messages:
-						print(f"{m.path}:{m.line}: [{m.msg_id}({m.symbol}), {m.obj}] {m.msg}")
+				for m in messages:
+					print(f"{m.path}:{m.line}: [{m.msg_id}({m.symbol}), Object:'{m.obj}'] {m.msg}")
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)
