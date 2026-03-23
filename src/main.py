@@ -39,7 +39,7 @@ def main():
 				)
 				report = generator.generate(messages)
 				print(report)
-				
+
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)
