@@ -1,5 +1,4 @@
 import argparse
-import os
 import sys
 import tempfile
 
@@ -37,8 +36,11 @@ def main():
 					github_ref=pr.head.sha,
 					github_repo_url=pr.base.repo.html_url
 				)
-				report = generator.generate(messages)
-				print(report)
+				if file_path.endswith('.py'):
+					report = generator.generate(messages)
+					print(report)
+				else:
+					print(messages)
 
 	except Exception as e:
 		print(f'Error: {e}')
