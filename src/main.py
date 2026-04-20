@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import tempfile
+import shlex
 
 from .github_module import login, get_pull_request_metadata, download_pull_request_files
 from .linters import LinterFactory
@@ -20,8 +21,14 @@ def main():
 		sys.exit(1)
 	args = parser.parse_args()
 	try:
-		if args.severity or args.pylint or args.oclint:
+		if args.severity or args.oclint:
 			raise NotImplementedError('Функциональность ещё не реализована')
+		pylint_options = None
+		if args.pylint:
+			pylint_options = []
+			for opt in shlex.split(args.pylint):
+				if opt:
+					pylint_options.append(opt)
 		g = login(args.token)
 		pr = get_pull_request_metadata(g, args.pr_url)
 		with tempfile.TemporaryDirectory() as tmpdir:
@@ -30,7 +37,7 @@ def main():
 				raise Exception('В PR нет подходящих для анализа файлов')
 			for file_path in all_files:
 				linter = LinterFactory.get_linter(file_path)
-				messages = linter.run(file_path)
+				messages = linter.run(file_path, options=pylint_options)
 				generator = ReportGenerator(
 					show_code_snippet = True,
 					snippet_context_lines = 2,
