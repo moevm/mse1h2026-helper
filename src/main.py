@@ -1,8 +1,8 @@
 import argparse
 import os
 import sys
-import tempfile
 import shlex
+import tempfile
 
 from .github_module import login, get_pull_request_metadata, download_pull_request_files
 from .linters import LinterFactory
