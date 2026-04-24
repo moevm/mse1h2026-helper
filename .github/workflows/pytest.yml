@@ -11,13 +11,23 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: python:3.14.3-slim
+      image: ubuntu:22.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y python3 python3-pip python3-venv wget 
+
+      - name: Install OCLint
+        run: |
+          chmod +x install_oclint.sh
+          ./install_oclint.sh
+
+      - name: Install Python dependencies
         run: |
           pip install pytest
           pip install -r requirements.txt
