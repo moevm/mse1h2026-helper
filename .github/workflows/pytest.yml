@@ -21,8 +21,8 @@ jobs:
         run: |
           apt-get update
           apt-get install -y python3 python3-pip python3-venv wget 
-      
-      - name: Install OCLint dependencies
+
+      - name: Install OCLint
         run: |
           chmod +x install_oclint.sh
           ./install_oclint.sh
