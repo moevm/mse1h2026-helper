@@ -3,7 +3,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 
-def login(pr_url: str, token: Optional[str] = None):
+def login(pr_url: str, token: Optional[str] = None) -> requests.Session:
     parsed = urlparse(pr_url)
     base_url = f"{parsed.scheme}://{parsed.netloc}"
     session = requests.Session()
