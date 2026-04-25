@@ -3,7 +3,7 @@ import sys
 import shlex
 import tempfile
 
-from .hosting_fetcher import github_fetcher
+from .hosting_fetcher import login, get_pull_request_metadata, download_pull_request_files
 from .linters import LinterFactory
 from .reports import ReportGenerator
 from .linters import options as linter_options
@@ -28,10 +28,10 @@ def main():
 			for opt in shlex.split(args.pylint):
 				if opt:
 					pylint_options.append(opt)
-		g = github_fetcher.login(args.token)
-		pr = github_fetcher.get_pull_request_metadata(g, args.pr_url)
+		client = login(args.token, args.pr_url)
+		pr = get_pull_request_metadata(client, args.pr_url)
 		with tempfile.TemporaryDirectory() as tmpdir:
-			all_files = github_fetcher.download_pull_request_files(g, pr, tmpdir)
+			all_files = download_pull_request_files(client, pr, tmpdir)
 			if not all_files:
 				raise Exception('В PR нет подходящих для анализа файлов')
 			for file_path in all_files:
@@ -48,7 +48,7 @@ def main():
 					print(report)
 				else:
 					print(messages)
-
+					
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)

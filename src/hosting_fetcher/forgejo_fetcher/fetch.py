@@ -1,5 +1,6 @@
 import os
 from typing import List
+from urllib.parse import urlparse
 
 from ...config import SUPPORTED_EXTENSIONS
 from ..pull_request import PullRequest
@@ -7,20 +8,29 @@ from ..utils import safe_str
 from ..utils import parse_datetime
 
 
-def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
-    path = pr_url.replace(client.base_url, '').strip('/')
+def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
+    parsed = urlparse(pr_url)
+    path = parsed.path.strip('/')
     parts = path.split('/')
-    try:
-        owner, repo_name = parts[0], parts[1]
-        if 'pulls' in parts:
-            pr_index = parts.index('pulls') + 1
-        elif 'pull' in parts:
-            pr_index = parts.index('pull') + 1
-        else:
-            raise ValueError(f"Неправильный формат ссылки на PR: {pr_url}")
-        pr_number = int(parts[pr_index])
-    except (IndexError, ValueError):
-        raise ValueError(f'Невалидная ссылка на PR: {pr_url}')
+    if len(parts) < 3:
+        raise ValueError(f"URL слишком короткий: {pr_url}")
+    owner = parts[0]
+    repo_name = parts[1]
+    pr_number = None
+    for i, part in enumerate(parts):
+        if part in ['pulls', 'pull'] and i + 1 < len(parts):
+            try:
+                pr_number = int(parts[i + 1])
+                break
+            except ValueError:
+                continue
+    if pr_number is None:
+        raise ValueError(f"Не найдена секция pulls/pull в URL: {pr_url}")
+    return owner, repo_name, pr_number
+
+
+def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
+    owner, repo_name, pr_number = parse_pr_url(pr_url)
     url = f"{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}"
     response = client.get(url)
     response.raise_for_status()
@@ -44,7 +54,6 @@ def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
     user_id = safe_str(
         user.get('login_name') or user.get('login') or user.get('username')
     )
-
     return PullRequest(
         body=safe_str(pr_data.get('body')),
         changed_files=changed_files, 

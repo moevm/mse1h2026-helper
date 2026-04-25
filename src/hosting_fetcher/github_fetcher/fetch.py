@@ -14,7 +14,7 @@ def get_pull_request_metadata(g: Github, pr_url: str) -> PullRequest:
         owner, repo_name = parts[0], parts[1]
         pr_number = int(parts[parts.index('pull') + 1])
     except (IndexError, ValueError):
-        raise ValueError(f'Invalid GitHub PR URL: {pr_url}')
+        raise ValueError(f'Невалидная GitHub PR ссылка: {pr_url}')
     repo = g.get_repo(f'{owner}/{repo_name}')
     pr = repo.get_pull(pr_number)
     labels = [label.name for label in pr.get_labels()]

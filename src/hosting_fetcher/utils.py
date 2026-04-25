@@ -1,5 +1,6 @@
 from typing import Optional, Union
 from datetime import datetime
+from urllib.parse import urlparse
 
 def safe_str(value: Optional[str], default: str = '') -> str:
     return value if value is not None else default
@@ -16,3 +17,10 @@ def parse_datetime(value: Optional[Union[str, datetime]]) -> Optional[datetime]:
         except ValueError:
             return datetime.fromisoformat(value.split('+')[0].split('Z')[0])
     return None
+
+
+def detect_hosting(pr_url: str) -> str:
+    parsed = urlparse(pr_url)
+    if 'github.com' in parsed.netloc:
+        return 'github'
+    return 'forgejo'
