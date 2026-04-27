@@ -72,14 +72,16 @@ def main():
 	parser.add_argument('--pylint', help='Параметры для линтера Pylint')
 	parser.add_argument('--oclint', help='Параметры для линтера OCLint')
 	parser.add_argument('--repo', help='URL репозитория для анализа PR по номерам')
-	parser.add_argument('--pr-range', help='Диапазон номеров PR (например, 1-6)')
-	parser.add_argument('--pr-include', help='Список номеров PR для включения (например, 6,42)')
-	parser.add_argument('--pr-exclude', help='Список номеров PR для исключения (например, 6,42)')
+	parser.add_argument('--pr-range', help='Диапазон номеров PR (например, 20-40)')
+	parser.add_argument('--pr-include', help='Список номеров PR для включения (например, 19,44)')
+	parser.add_argument('--pr-exclude', help='Список номеров PR для исключения (например, 21,39)')
+	parser.add_argument('pr_urls', metavar='PULL_REQUEST_URL', nargs='*', help='Ссылки на PR (должны идти после всех флагов)')
+	
 	if len(sys.argv) == 1:
 		parser.print_help()
 		sys.exit(1)
-	args, remaining = parser.parse_known_args()
-	args.pr_urls = remaining
+	
+	args = parser.parse_args()
 	try:
 		if args.severity or args.oclint:
 			raise NotImplementedError('Функциональность ещё не реализована')
