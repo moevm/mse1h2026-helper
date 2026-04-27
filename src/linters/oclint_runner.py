@@ -8,7 +8,7 @@ class OCLintWrapper(Linter):
 	def run(self, file_path: str):
 		try:
 			result = subprocess.run(
-				['oclint','-report-type', 'text', file_path, '--', '-std=c++17', '-Wall'],
+				['oclint', '-report-type', 'text', file_path, '--', '-std=c++17', '-Wall'],
 				capture_output=True,
 				text=True
 			)

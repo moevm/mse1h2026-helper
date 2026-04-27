@@ -21,15 +21,13 @@ def main():
 		sys.exit(1)
 	args = parser.parse_args()
 	try:
-		if args.severity:
+		if args.severity or args.oclint:
 			raise NotImplementedError('Функциональность ещё не реализована')
 		if args.pylint:
 			linter_options.pylint_options = []
 			for opt in shlex.split(args.pylint):
 				if opt:
 					linter_options.pylint_options.append(opt)
-		if args.oclint:
-			raise NotImplementedError('Функциональность ещё не реализована')		
 		g = login(args.token)
 		pr = get_pull_request_metadata(g, args.pr_url)
 		with tempfile.TemporaryDirectory() as tmpdir:
