@@ -3,7 +3,7 @@ import sys
 import shlex
 import tempfile
 
-from .github_module import login, get_pull_request_metadata, download_pull_request_files
+from .hosting_fetcher import login, get_pull_request_metadata, download_pull_request_files
 from .linters import LinterFactory
 from .reports import ReportGenerator
 from .linters import options as linter_options
@@ -28,10 +28,10 @@ def main():
 			for opt in shlex.split(args.pylint):
 				if opt:
 					linter_options.pylint_options.append(opt)
-		g = login(args.token)
-		pr = get_pull_request_metadata(g, args.pr_url)
+		client = login(args.token, args.pr_url)
+		pr = get_pull_request_metadata(client, args.pr_url)
 		with tempfile.TemporaryDirectory() as tmpdir:
-			all_files = download_pull_request_files(pr, tmpdir)
+			all_files = download_pull_request_files(client, pr, tmpdir)
 			if not all_files:
 				raise Exception('В PR нет подходящих для анализа файлов')
 			for file_path in all_files:
@@ -40,8 +40,8 @@ def main():
 				generator = ReportGenerator(
 					show_code_snippet = True,
 					snippet_context_lines = 2,
-					github_ref=pr.head.sha,
-					github_repo_url=pr.base.repo.html_url
+					github_ref=pr.merge_commit_sha,
+					github_repo_url=pr.html_url
 				)
 				if file_path.endswith('.py'):
 					report = generator.generate(messages)
@@ -55,4 +55,4 @@ def main():
 
 
 if __name__ == '__main__':
-	main()
+    main()
