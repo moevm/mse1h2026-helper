@@ -6,6 +6,7 @@ from ...config import SUPPORTED_EXTENSIONS
 from ..pull_request import PullRequest
 from ..utils import safe_str
 from ..utils import parse_datetime
+from pyforgejo import PyforgejoApi
 
 
 def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
@@ -29,74 +30,111 @@ def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
     return owner, repo_name, pr_number
 
 
-def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
+def get_pull_request_metadata(client: PyforgejoApi, pr_url: str) -> PullRequest:
     owner, repo_name, pr_number = parse_pr_url(pr_url)
-    url = f"{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}"
-    response = client.get(url)
-    response.raise_for_status()
-    pr_data = response.json()
-    commits_url = f"{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}/commits"
-    commits_response = client.get(commits_url)
-    commits_response.raise_for_status()
-    commits_list = commits_response.json()
-    commit_shas = [c['sha'] for c in commits_list if 'sha' in c]
-    files_url = f"{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}/files"
-    files_response = client.get(files_url)
-    files_response.raise_for_status()
-    files = files_response.json()
-    changed_files = len(files)
+    pr_data = client.repository.repo_get_pull_request(
+        owner=owner,
+        repo=repo_name,
+        index=pr_number,
+    )
+    commits = client.repository.repo_get_pull_request_commits(
+        owner=owner,
+        repo=repo_name,
+        index=pr_number,
+    )
+    commit_shas = [c.sha for c in commits]
     labels = [
-        label.get('name', '')
-        for label in pr_data.get('labels', [])
-        if label.get('name')
+        label.name
+        for label in (pr_data.labels or [])
+        if getattr(label, "name", None)
     ]
-    user = pr_data.get('user', {}) or {}
+    user = pr_data.user
     user_id = safe_str(
-        user.get('login_name') or user.get('login') or user.get('username')
+        getattr(user, "login_name", None)
+        or getattr(user, "login", None)
     )
     return PullRequest(
-        body=safe_str(pr_data.get('body')),
-        changed_files=changed_files, 
-        closed_at=parse_datetime(pr_data.get('closed_at')),
-        created_at=parse_datetime(pr_data['created_at']),
-        draft=bool(pr_data.get('draft', False)),
-        html_url=safe_str(pr_data.get('html_url'), default=pr_url),
+        body=safe_str(pr_data.body),
+        changed_files=getattr(pr_data, "changed_files", 0),
+        closed_at=parse_datetime(pr_data.closed_at),
+        created_at=parse_datetime(pr_data.created_at),
+        draft=bool(pr_data.draft),
+        html_url=safe_str(pr_data.html_url, default=pr_url),
         labels=labels,
-        merge_commit_sha=pr_data.get('merge_commit_sha'),
-        merged=bool(pr_data.get('merged', False)),
-        merged_at=parse_datetime(pr_data.get('merged_at')),
+        merge_commit_sha=pr_data.merge_commit_sha,
+        merged=bool(pr_data.merged),
+        merged_at=parse_datetime(pr_data.merged_at),
         number=pr_number,
-        state=safe_str(pr_data.get('state', 'open')),
-        title=safe_str(pr_data.get('title'), default=f'PR #{pr_number}'),
-        updated_at=parse_datetime(pr_data['updated_at']),
+        state=safe_str(pr_data.state, default="open"),
+        title=safe_str(pr_data.title, default=f"PR #{pr_number}"),
+        updated_at=parse_datetime(pr_data.updated_at),
         commits=commit_shas,
-        hosting='forgejo',
+        hosting="forgejo",
         org_id=owner,
         repo_id=repo_name,
         user_id=user_id,
     )
 
 
-def download_pull_request_files(client, pr_metadata: PullRequest, local_dir: str) -> List[str]:
+def download_pull_request_files(client: PyforgejoApi, pr_metadata: PullRequest, local_dir: str) -> List[str]:
     owner = pr_metadata.org_id
     repo = pr_metadata.repo_id
     pr_number = pr_metadata.number
-    head_sha = pr_metadata.commits[-1] if pr_metadata.commits else None
-    url = f"{client.base_url}/api/v1/repos/{owner}/{repo}/pulls/{pr_number}/files"
-    response = client.get(url)
-    response.raise_for_status()
-    files = response.json()
-    downloaded_paths = []
-    for file_info in files:
-        filename = file_info['filename']
-        if any(filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
-            raw_url = f"{client.base_url}/api/v1/repos/{owner}/{repo}/raw/{filename}"
-            params = {'ref': head_sha} if head_sha else {}
-            file_response = client.get(raw_url, params=params)
-            if file_response.status_code == 200:
-                local_path = os.path.join(local_dir, filename)
-                os.makedirs(os.path.dirname(local_path), exist_ok=True)
-                with open(local_path, 'wb') as f:
-                    f.write(file_response.content)
-                downloaded_paths.append(local_path)
-    return downloaded_paths
+    pr_data = client.repository.repo_get_pull_request(
+        owner=owner,
+        repo=repo,
+        index=pr_number,
+    )
+    ref = pr_data.head.ref
+    commits = client.repository.repo_get_pull_request_commits(
+        owner=owner,
+        repo=repo,
+        index=pr_number,
+        files=True,
+    )
+    files_info = {}
+    for commit in commits:
+        for f in getattr(commit, "files", []) or []:
+            filename = getattr(f, "filename", None)
+            if not filename:
+                continue
+
+            files_info[filename] = {
+                "status": getattr(f, "status", None),
+                "previous": getattr(f, "previous_filename", None),
+            }
+    downloaded = []
+    for filename, meta in files_info.items():
+        if not any(filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
+            continue
+        if meta["status"] == "removed":
+            continue
+        try:
+            content = client.repository.repo_get_raw_file(
+                owner=owner,
+                repo=repo,
+                filepath=filename,
+                ref=ref,
+            )
+            if content is None:
+                continue
+            if isinstance(content, str):
+                data = content.encode("utf-8")
+            elif isinstance(content, bytes):
+                data = content
+            elif hasattr(content, "__iter__"):
+                data = b"".join(
+                    chunk.encode() if isinstance(chunk, str) else chunk
+                    for chunk in content
+                )
+            else:
+                raise TypeError(f"Неподдерживаемый тип: {type(content)}")
+            local_path = os.path.join(local_dir, filename)
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            with open(local_path, "wb") as f:
+                f.write(data)
+
+            downloaded.append(local_path)
+        except Exception:
+            continue
+    return downloaded
