@@ -27,7 +27,7 @@ def main():
 			linter_options.pylint_options = []
 			for opt in shlex.split(args.pylint):
 				if opt:
-					pylint_options.append(opt)
+					linter_options.pylint_options.append(opt)
 		client = login(args.token, args.pr_url)
 		pr = get_pull_request_metadata(client, args.pr_url)
 		with tempfile.TemporaryDirectory() as tmpdir:
@@ -48,6 +48,7 @@ def main():
 					print(report)
 				else:
 					print(messages)
+
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)
