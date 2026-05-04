@@ -76,7 +76,6 @@ class CustomRulesWrapper(Linter):
 		threshold = 5
 		messages = []
 
-		# Извлекаем owner/repo из repo_url
 		try:
 			parsed = urlparse(pr.repo_url.rstrip("/"))
 			path_parts = [p for p in parsed.path.split("/") if p]
