@@ -14,7 +14,7 @@ FORGEJO_PR_URL_REGEX = re.compile(r'^https?://[^/]+/[^/]+/[^/]+/pulls?/\d+/?$')
 PR_RANGE_REGEX = re.compile(r'^(\d+)-(\d+)$')
 
 def is_valid_pr_url(url: str) -> bool:
-    return bool(GITHUB_PR_URL_REGEX.match(url) or FORGEJO_PR_URL_REGEX.match(url))
+	return bool(GITHUB_PR_URL_REGEX.match(url) or FORGEJO_PR_URL_REGEX.match(url))
 
 def parse_pr_range(range_str):
 	match = PR_RANGE_REGEX.match(range_str)
