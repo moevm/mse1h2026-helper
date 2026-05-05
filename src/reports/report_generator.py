@@ -75,17 +75,23 @@ class ReportGenerator:
 	def _detect_hosting(self, repo_url: str) -> str:
 		return 'github' if 'github.com' in repo_url else 'forgejo'
 
-	def _make_link(self, file_path: str, line: int, column: int) -> str:
+	def _make_link(self, msg: Message) -> str:
 		if not self._hosting_info:
 			return f'{file_path}:{line}:{column}'
 
-		clean_path = self._extract_repo_path(file_path)
+		file_path, line, column = msg.abspath, msg.line, msg.column
+		commit_sha = getattr(msg, 'specified_commit', None)
 
-		base = self._hosting_info['repo_url']
-		ref = self._hosting_info['ref']
+		base = self._hosting_info['repo_url'].rstrip('/')
 
-		if ref:
+		if commit_sha:
+			return f'{base}/commit/{commit_sha}'
+
+		clean_path = self._extract_repo_path(file_path).lstrip('/')
+
+		if clean_path:
 			hosting = self._detect_hosting(base)
+			ref = self._hosting_info['ref']
 			if hosting == 'github':
 				return f'{base}/blob/{ref}/{clean_path}#L{line}'
 			else:
@@ -94,13 +100,18 @@ class ReportGenerator:
 
 	def _format_message(self, msg: Message, display_path: str) -> str:
 		linter = getattr(msg, 'linter', 'Unknown linter')
-		hosting_link = self._make_link(msg.abspath, msg.line, msg.column)
+		hosting_link = self._make_link(msg)
 
-		first_line = f'[{linter}]'
-		second_line = f'{display_path}:{msg.line}: {msg.msg_id}: {msg.msg}'
-		third_line = f'{hosting_link}'
+		path = (display_path or '').strip()
+		if path in {'.', ''}:
+			path = getattr(msg, 'module', '') or getattr(msg, 'symbol', '')
 
-		lines = [first_line, second_line, third_line]
+		if path:
+			second_line = f'{path}:{msg.line}: {msg.msg_id}: {msg.msg}'
+		else:
+			second_line = f'{msg.msg_id}: {msg.msg}'
+
+		lines = [f'[{linter}]', second_line, hosting_link]
 
 		if self.show_code_snippet:
 			snippet = self._get_code_snippet(msg.abspath, msg.line)

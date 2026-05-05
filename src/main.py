@@ -7,6 +7,7 @@ import tempfile
 from .hosting_fetcher import login, get_pull_request_metadata, download_pull_request_files
 from .linters import LinterFactory
 from .reports import ReportGenerator
+from .linters.custom_runner import CustomRulesWrapper
 from .linters import options as linter_options
 
 GITHUB_PR_URL_REGEX = re.compile(r'^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$')
@@ -48,26 +49,38 @@ def collect_pr_urls(args):
 			pr_urls.append(f'{repo_url}/pull/{pr_num}')
 	return pr_urls
 
-def process_pull_request(g, pr_url):
+def process_pull_request(g, token, pr_url):
 	pr = get_pull_request_metadata(g, pr_url)
 	with tempfile.TemporaryDirectory() as tmpdir:
-		print("PR: ", pr_url)
-		with tempfile.TemporaryDirectory() as tmpdir:
-			all_files = download_pull_request_files(g, pr, tmpdir)
-			if not all_files:
-				print(f'Warning: No suitable files found in PR {pr_url}')
-				return
-			for file_path in all_files:
-				linter = LinterFactory.get_linter(file_path)
-				messages = linter.run(file_path)
-				generator = ReportGenerator(
-					show_code_snippet=True,
-					snippet_context_lines=2,
-					hosting_ref=pr.merge_commit_sha,
-					hosting_repo_url=pr.repo_url
-			)
-			report = generator.generate(messages)
-			print(report)
+		print('PR: ', pr_url)
+		all_files = download_pull_request_files(g, pr, tmpdir)
+		if not all_files:
+			print(f'Warning: No suitable files found in PR {pr_url}')
+			return
+
+		all_messages = []
+
+		for file_path in all_files:
+			linter = LinterFactory.get_linter(file_path)
+			all_messages.extend(linter.run(file_path))
+
+		context = {'pr': pr}
+		if pr.hosting == 'github':
+			context['github_client'] = g
+		elif pr.hosting == 'forgejo':
+			context['forgejo_token'] = token
+
+		custom_linter = CustomRulesWrapper(context=context)
+		all_messages.extend(custom_linter.run(file_path=''))
+
+		generator = ReportGenerator(
+			show_code_snippet=True,
+			snippet_context_lines=2,
+			hosting_ref=pr.merge_commit_sha,
+			hosting_repo_url=pr.repo_url
+		)
+		report = generator.generate(all_messages)
+		print(report)
 
 def main():
 	parser = argparse.ArgumentParser(
@@ -99,9 +112,11 @@ def main():
 		pr_urls = collect_pr_urls(args)
 		if not pr_urls:
 			raise ValueError('Не указаны PR для анализа')
-		for pr_url in pr_urls:
+		for i, pr_url in enumerate(pr_urls):
+			if i > 0:
+				print('\n====================================\n')
 			g = login(args.token, pr_url)
-			process_pull_request(g, pr_url)
+			process_pull_request(g, args.token, pr_url)
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)
