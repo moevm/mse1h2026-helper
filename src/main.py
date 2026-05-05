@@ -53,7 +53,7 @@ def collect_pr_urls(args):
 def process_pull_request(g, pr_url):
 	pr = get_pull_request_metadata(g, pr_url)
 	with tempfile.TemporaryDirectory() as tmpdir:
-		print("PR: ", pr_url)
+		print('PR: ', pr_url)
 		all_files = download_pull_request_files(g, pr, tmpdir)
 		if not all_files:
 			print(f'Warning: No suitable files found in PR {pr_url}')
@@ -65,16 +65,16 @@ def process_pull_request(g, pr_url):
 			linter = LinterFactory.get_linter(file_path)
 			all_messages.extend(linter.run(file_path))
 
-		context = {"pr": pr}
+		context = {'pr': pr}
 		if pr.hosting == 'github':
-			context["github_client"] = g
+			context['github_client'] = g
 		elif pr.hosting == 'forgejo':
-			token = os.getenv("FORGEJO_TOKEN")
+			token = os.getenv('FORGEJO_TOKEN')
 			if token:
-				context["forgejo_token"] = token
+				context['forgejo_token'] = token
 
 		custom_linter = CustomRulesWrapper(context=context)
-		all_messages.extend(custom_linter.run(file_path=""))
+		all_messages.extend(custom_linter.run(file_path=''))
 
 		generator = ReportGenerator(
 			show_code_snippet=True,
@@ -115,7 +115,9 @@ def main():
 		pr_urls = collect_pr_urls(args)
 		if not pr_urls:
 			raise ValueError('Не указаны PR для анализа')
-		for pr_url in pr_urls:
+		for i, pr_url in enumerate(pr_urls):
+			if i > 0:
+				print('\n====================================\n')
 			g = login(args.token, pr_url)
 			process_pull_request(g, pr_url)
 	except Exception as e:
