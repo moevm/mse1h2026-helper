@@ -3,7 +3,6 @@ import re
 import sys
 import shlex
 import tempfile
-import os
 
 from .hosting_fetcher import login, get_pull_request_metadata, download_pull_request_files
 from .linters import LinterFactory
@@ -50,7 +49,7 @@ def collect_pr_urls(args):
 			pr_urls.append(f'{repo_url}/pull/{pr_num}')
 	return pr_urls
 
-def process_pull_request(g, pr_url):
+def process_pull_request(g, token, pr_url):
 	pr = get_pull_request_metadata(g, pr_url)
 	with tempfile.TemporaryDirectory() as tmpdir:
 		print('PR: ', pr_url)
@@ -69,9 +68,7 @@ def process_pull_request(g, pr_url):
 		if pr.hosting == 'github':
 			context['github_client'] = g
 		elif pr.hosting == 'forgejo':
-			token = os.getenv('FORGEJO_TOKEN')
-			if token:
-				context['forgejo_token'] = token
+			context['forgejo_token'] = token
 
 		custom_linter = CustomRulesWrapper(context=context)
 		all_messages.extend(custom_linter.run(file_path=''))
@@ -119,7 +116,7 @@ def main():
 			if i > 0:
 				print('\n====================================\n')
 			g = login(args.token, pr_url)
-			process_pull_request(g, pr_url)
+			process_pull_request(g, args.token, pr_url)
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)
