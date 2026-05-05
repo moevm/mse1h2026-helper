@@ -56,7 +56,7 @@ def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
 	)
 	return PullRequest(
 		body=safe_str(pr_data.get('body')),
-		changed_files=changed_files, 
+		changed_files=changed_files,
 		closed_at=parse_datetime(pr_data.get('closed_at')),
 		created_at=parse_datetime(pr_data['created_at']),
 		draft=bool(pr_data.get('draft', False)),

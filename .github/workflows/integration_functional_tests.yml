@@ -1,4 +1,4 @@
-name: Docker Integration & Functional Tests
+name: Integration & Functional Tests
 
 on:
   push:
@@ -27,88 +27,84 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo " Testing: GitHub C++ PR "
           docker run --rm \
             -e GITHUB_TOKEN="${GITHUB_TOKEN}" \
             mse1h2026-helper:test \
             --token "${GITHUB_TOKEN}" \
             https://github.com/pasabanov/mse1h2026-helper-test/pull/1 > cpp_github.log 2>&1
-          
+
           EXIT_CODE=$?
           if [ $EXIT_CODE -ne 0 ]; then
             echo "Exit code: $EXIT_CODE"
             exit 1
           fi
-          
-          grep -q "[OCLint]" cpp_github.log || (echo " Missing OCLint output" && exit 1)
-          grep -q "main.cpp" cpp_github.log || echo " No C++ files found"
-          grep -q "Traceback" cpp_github.log && (echo " Found Traceback" && exit 1) || true
-          
+
+          grep -q "[OCLint]" cpp_github.log || (echo "Missing OCLint output" && exit 1)
+          grep -q "main.cpp" cpp_github.log || echo "No C++ files found"
+          grep -q "Traceback" cpp_github.log && (echo "Found Traceback" && exit 1) || true
+
           echo "GitHub C++ PR passed"
 
       - name: Test GitHub Python PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Testing: GitHub Python PR "
           docker run --rm \
             -e GITHUB_TOKEN="${GITHUB_TOKEN}" \
             mse1h2026-helper:test \
             --token "${GITHUB_TOKEN}" \
             https://github.com/pasabanov/mse1h2026-helper-test/pull/2 > python_github.log 2>&1
-          
+
           EXIT_CODE=$?
           if [ $EXIT_CODE -ne 0 ]; then
             echo "Exit code: $EXIT_CODE"
             exit 1
           fi
-          
-          grep -q "[Pylint]" python_github.log || (echo " Missing Pylint output" && exit 1)
-          grep -q "\.py" python_github.log || echo " No Python files found"
+
+          grep -q "[Pylint]" python_github.log || (echo "Missing Pylint output" && exit 1)
+          grep -q "\.py" python_github.log || echo "No Python files found"
           grep -q "Traceback" python_github.log && (echo "Found Traceback" && exit 1) || true
-          
+
           echo "GitHub Python PR passed"
 
       - name: Test Forgejo C++ PR
         env:
           FORGEJO_TOKEN: ${{ secrets.CODEBERG__PASABANOV__MSE1H2026_HELPER_TEST__REPOSITORY__READONLY__TOKEN }}
         run: |
-          echo "Testing: Forgejo C++ PR "
           docker run --rm \
             -e FORGEJO_TOKEN="${FORGEJO_TOKEN}" \
             mse1h2026-helper:test \
             --token "${FORGEJO_TOKEN}" \
             https://codeberg.org/pasabanov/mse1h2026-helper-test/pulls/1 > cpp_forgejo.log 2>&1
-          
+
           EXIT_CODE=$?
           if [ $EXIT_CODE -ne 0 ]; then
-            echo " Exit code: $EXIT_CODE"
+            echo "Exit code: $EXIT_CODE"
             exit 1
           fi
 
           grep -q "[OCLint]" cpp_forgejo.log || (echo "Missing OCLint output" && exit 1)
-          grep -q "Traceback" cpp_forgejo.log && (echo " Found Traceback" && exit 1) || true
-          
+          grep -q "Traceback" cpp_forgejo.log && (echo "Found Traceback" && exit 1) || true
+
           echo "Forgejo C++ PR passed"
 
       - name: Test Forgejo Python PR
         env:
           FORGEJO_TOKEN: ${{ secrets.CODEBERG__PASABANOV__MSE1H2026_HELPER_TEST__REPOSITORY__READONLY__TOKEN }}
         run: |
-          echo " Testing: Forgejo Python PR "
           docker run --rm \
             -e FORGEJO_TOKEN="${FORGEJO_TOKEN}" \
             mse1h2026-helper:test \
             --token "${FORGEJO_TOKEN}" \
             https://codeberg.org/pasabanov/mse1h2026-helper-test/pulls/2 > python_forgejo.log 2>&1
-          
+
           EXIT_CODE=$?
           if [ $EXIT_CODE -ne 0 ]; then
-            echo " Exit code: $EXIT_CODE"
+            echo "Exit code: $EXIT_CODE"
             exit 1
           fi
 
-          grep -q "[Pylint]" python_forgejo.log || (echo " Missing Pylint output" && exit 1)
-          grep -q "Traceback" python_forgejo.log && (echo " Found Traceback" && exit 1) || true
-          
+          grep -q "[Pylint]" python_forgejo.log || (echo "Missing Pylint output" && exit 1)
+          grep -q "Traceback" python_forgejo.log && (echo "Found Traceback" && exit 1) || true
+
           echo "Forgejo Python PR passed"
