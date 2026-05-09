@@ -1,5 +1,5 @@
 import re
-from pathlib import PurePath
+from pathlib import Path
 from typing import List, Optional
 
 from pylint.message import Message
@@ -8,14 +8,13 @@ TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 
 
 class ReportGenerator:
-	_PATH_MARKERS = {'src', 'lib', 'app', 'tests', 'pkg', 'modules', 'core'}
-
 	def __init__(
 		self,
 		show_code_snippet: bool = True,
 		snippet_context_lines: int = 2,
 		hosting_ref: Optional[str] = None,
-		hosting_repo_url: Optional[str] = None
+		hosting_repo_url: Optional[str] = None,
+		files_dir: str = None
 	):
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
@@ -26,6 +25,7 @@ class ReportGenerator:
 				'ref': hosting_ref,
 				'repo_url': hosting_repo_url.rstrip('/')
 			}
+		self._files_dir = Path(files_dir) if files_dir else None
 
 	def generate(self, messages: List[Message]) -> str:
 		if not messages:
@@ -61,16 +61,13 @@ class ReportGenerator:
 		path = TMP_PREFIX.sub('', path)
 		return path.lstrip('/')
 
-	def _extract_repo_path(self, file_path: str) -> str:
-		"""Converts absolute path (/tmp/xxx/src/file.py) to a path inside a repository (src/file.py)"""
-		normalized = file_path.replace('\\', '/')
-		parts = normalized.split('/')
-
-		for i, part in enumerate(parts):
-			if part in self._PATH_MARKERS:
-				return '/'.join(parts[i:])
-
-		return parts[-1]  # fallback: file name
+	def _get_repo_relative_path(self, file_path: str) -> str:
+		if not self._files_dir:
+			return Path(file_path).name
+		try:
+			return Path(file_path).relative_to(self._files_dir).as_posix()
+		except ValueError:
+			return Path(file_path).name
 
 	def _detect_hosting(self, repo_url: str) -> str:
 		return 'github' if 'github.com' in repo_url else 'forgejo'
@@ -87,7 +84,7 @@ class ReportGenerator:
 		if commit_sha:
 			return f'{base}/commit/{commit_sha}'
 
-		clean_path = self._extract_repo_path(file_path).lstrip('/')
+		clean_path = self._get_repo_relative_path(file_path).lstrip('/')
 
 		if clean_path:
 			hosting = self._detect_hosting(base)

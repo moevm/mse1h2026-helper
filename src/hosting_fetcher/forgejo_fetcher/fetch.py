@@ -1,11 +1,18 @@
 import os
-from typing import List
+import tempfile
+import atexit
+import shutil
 from urllib.parse import urlparse
 
 from ...config import SUPPORTED_EXTENSIONS
 from ..pull_request import PullRequest
 from ..utils import safe_str
 from ..utils import parse_datetime
+
+
+def _cleanup_dir(path: str) -> None:
+	if path and os.path.exists(path):
+		shutil.rmtree(path, ignore_errors=True)
 
 
 def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
@@ -28,8 +35,9 @@ def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
 		raise ValueError(f'Не найдена секция pulls/pull в URL: {pr_url}')
 	return owner, repo_name, pr_number
 
-
-def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
+def get_pull_request(client, pr_url: str) -> PullRequest:
+	tmpdir = tempfile.mkdtemp(prefix=f"pr_{hash(pr_url)}_")
+	atexit.register(_cleanup_dir, tmpdir)
 	owner, repo_name, pr_number = parse_pr_url(pr_url)
 	url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}'
 	response = client.get(url)
@@ -54,7 +62,7 @@ def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
 	user_id = safe_str(
 		user.get('login_name') or user.get('login') or user.get('username')
 	)
-	return PullRequest(
+	pr_obj = PullRequest(
 		body=safe_str(pr_data.get('body')),
 		changed_files=changed_files,
 		closed_at=parse_datetime(pr_data.get('closed_at')),
@@ -75,29 +83,27 @@ def get_pull_request_metadata(client, pr_url: str) -> PullRequest:
 		org_id=owner,
 		repo_id=repo_name,
 		user_id=user_id,
+		files_dir=tmpdir,
+		files=[],
 	)
-
-
-def download_pull_request_files(client, pr_metadata: PullRequest, local_dir: str) -> List[str]:
-	owner = pr_metadata.org_id
-	repo = pr_metadata.repo_id
-	pr_number = pr_metadata.number
-	head_sha = pr_metadata.commits[-1] if pr_metadata.commits else None
-	url = f'{client.base_url}/api/v1/repos/{owner}/{repo}/pulls/{pr_number}/files'
-	response = client.get(url)
-	response.raise_for_status()
-	files = response.json()
-	downloaded_paths = []
+	
+	head_sha = pr_data['head'].get('sha')
 	for file_info in files:
 		filename = file_info['filename']
-		if any(filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
-			raw_url = f'{client.base_url}/api/v1/repos/{owner}/{repo}/raw/{filename}'
+		if not any(filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
+			continue
+		try:
+			raw_url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/raw/{filename}'
 			params = {'ref': head_sha} if head_sha else {}
 			file_response = client.get(raw_url, params=params)
 			if file_response.status_code == 200:
-				local_path = os.path.join(local_dir, filename)
+				local_path = os.path.join(tmpdir, filename)
 				os.makedirs(os.path.dirname(local_path), exist_ok=True)
 				with open(local_path, 'wb') as f:
 					f.write(file_response.content)
-				downloaded_paths.append(local_path)
-	return downloaded_paths
+				pr_obj.files.append(local_path)
+		except Exception as e:
+			print(f'Не удалось скачать {filename}: {e}')
+			continue
+
+	return pr_obj
