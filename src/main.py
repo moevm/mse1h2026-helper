@@ -4,9 +4,9 @@ import sys
 
 from .hosting_fetcher import login, get_pull_request
 from .linters import LinterFactory
-from .reports import ReportGenerator
 from .linters.custom_runner import CustomRulesWrapper
 from .linters import options as linter_options
+from .reports import ReportGenerator
 
 GITHUB_PR_URL_REGEX = re.compile(r'^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$')
 FORGEJO_PR_URL_REGEX = re.compile(r'^https?://[^/]+/[^/]+/[^/]+/pulls?/\d+/?$')
@@ -55,10 +55,6 @@ def process_pull_request(g, token, pr):
 
 	all_messages = []
 
-	for file_path in pr.files:
-		linter = LinterFactory.get_linter(file_path)
-		all_messages.extend(linter.run(file_path))
-
 	context = {'pr': pr}
 	if pr.hosting == 'github':
 		context['github_client'] = g
@@ -66,6 +62,12 @@ def process_pull_request(g, token, pr):
 		context['forgejo_token'] = token
 
 	custom_linter = CustomRulesWrapper(context=context)
+
+	for file_path in pr.files:
+		linter = LinterFactory.get_linter(file_path)
+		all_messages.extend(linter.run(file_path))
+		all_messages.extend(custom_linter.run(file_path=file_path))
+
 	all_messages.extend(custom_linter.run(file_path=''))
 
 	generator = ReportGenerator(
