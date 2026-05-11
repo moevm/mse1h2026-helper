@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional
+from pathlib import Path
 from typing_extensions import Literal
 
 
@@ -29,3 +30,5 @@ class PullRequest:
 	org_id: str
 	repo_id: str
 	user_id: str
+	files_dir: Path
+	files: List[Path] = field(default_factory=list)

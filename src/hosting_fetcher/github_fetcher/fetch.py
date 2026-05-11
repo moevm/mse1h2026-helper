@@ -1,5 +1,7 @@
 import os
-from typing import List
+import tempfile
+import atexit
+import shutil
 from github import Github, GithubException
 
 from ...config import SUPPORTED_EXTENSIONS
@@ -7,22 +9,30 @@ from ..pull_request import PullRequest
 from ..utils import safe_str
 
 
-def get_pull_request_metadata(g: Github, pr_url: str) -> PullRequest:
+def _cleanup_dir(path: str) -> None:
+	if path and os.path.exists(path):
+		shutil.rmtree(path, ignore_errors=True)
+
+
+def get_pull_request(client: Github, pr_url: str) -> PullRequest:
+	tmpdir = tempfile.mkdtemp(prefix=f"pr_{hash(pr_url)}_")
+	atexit.register(_cleanup_dir, tmpdir)
 	path = pr_url.replace('https://github.com', '').strip('/')
 	parts = path.split('/')
 	try:
 		owner, repo_name = parts[0], parts[1]
 		pr_number = int(parts[parts.index('pull') + 1])
 	except (IndexError, ValueError):
+		_cleanup_dir(tmpdir)
 		raise ValueError(f'Невалидная GitHub PR ссылка: {pr_url}')
-	repo = g.get_repo(f'{owner}/{repo_name}')
+	repo = client.get_repo(f'{owner}/{repo_name}')
 	pr = repo.get_pull(pr_number)
 	labels = [label.name for label in pr.get_labels()]
 	commits = [commit.sha for commit in pr.get_commits()]
 	user_id = safe_str(
 		getattr(pr.user, 'name', None) or getattr(pr.user, 'login', None)
 	)
-	return PullRequest(
+	pr_obj = PullRequest(
 		body=safe_str(pr.body),
 		changed_files=pr.changed_files or 0,
 		closed_at=pr.closed_at,
@@ -43,17 +53,10 @@ def get_pull_request_metadata(g: Github, pr_url: str) -> PullRequest:
 		org_id=owner,
 		repo_id=repo_name,
 		user_id=user_id,
+		files_dir=tmpdir,
+		files=[],
 	)
 
-
-def download_pull_request_files(
-	client: Github,
-	pr_metadata: PullRequest,
-	local_dir: str
-) -> List[str]:
-	repo = client.get_repo(f'{pr_metadata.org_id}/{pr_metadata.repo_id}')
-	pr = repo.get_pull(pr_metadata.number)
-	downloaded_paths = []
 	for file in pr.get_files():
 		if file.status == 'removed':
 			continue
@@ -64,12 +67,12 @@ def download_pull_request_files(
 			if isinstance(content_file, list):
 				continue
 			content = content_file.decoded_content
-			local_path = os.path.join(local_dir, file.filename)
+			local_path = os.path.join(tmpdir, file.filename)
 			os.makedirs(os.path.dirname(local_path), exist_ok=True)
 			with open(local_path, 'wb') as f:
 				f.write(content)
-			downloaded_paths.append(local_path)
+			pr_obj.files.append(local_path)
 		except GithubException as e:
 			print(f'Не удалось скачать {file.filename}: {e}')
 			continue
-	return downloaded_paths
+	return pr_obj
