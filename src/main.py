@@ -70,13 +70,7 @@ def process_pull_request(g, token, pr):
 
 	all_messages.extend(custom_linter.run(file_path=''))
 
-	generator = ReportGenerator(
-		show_code_snippet=True,
-		snippet_context_lines=2,
-		hosting_ref=pr.merge_commit_sha,
-		hosting_repo_url=pr.repo_url,
-		files_dir=pr.files_dir
-	)
+	generator = ReportGenerator(pr, show_code_snippet=True, snippet_context_lines=2)
 	report = generator.generate(all_messages)
 	print(report)
 
