@@ -11,7 +11,7 @@ from pylint.interfaces import UNDEFINED
 from .base import PRRule
 
 class CommitSizeRule(PRRule):
-	def __init__(self, threshold: int = 5):
+	def __init__(self, threshold: int):
 		self.threshold = threshold
 
 	def check(self, context: dict[str, Any]) -> List[Message]:

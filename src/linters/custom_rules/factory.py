@@ -10,7 +10,7 @@ class RuleFactory:
 	]
 
 	_pr_rules: List[PRRule] = [
-		CommitSizeRule(threshold=5),
+		CommitSizeRule(threshold=10000),
 	]
 
 	@classmethod
