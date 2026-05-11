@@ -86,7 +86,7 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 		files_dir=tmpdir,
 		files=[],
 	)
-	
+
 	head_sha = pr_data['head'].get('sha')
 	for file_info in files:
 		filename = file_info['filename']

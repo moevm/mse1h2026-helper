@@ -35,7 +35,7 @@ class ReportGenerator:
 		lines = []
 
 		for file_path, file_messages in messages_by_file.items():
-			display_path = self._format_path(file_path)
+			display_path = self._get_repo_relative_path(file_path).lstrip('/')
 
 			lines.append(f'\nFile: {display_path}\n')
 
@@ -53,13 +53,6 @@ class ReportGenerator:
 				grouped[key] = []
 			grouped[key].append(msg)
 		return grouped
-
-	def _format_path(self, path: str) -> str:
-		if not path:
-			return path
-		path = path.replace('\\', '/')
-		path = TMP_PREFIX.sub('', path)
-		return path.lstrip('/')
 
 	def _get_repo_relative_path(self, file_path: str) -> str:
 		if not self._files_dir:

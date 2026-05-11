@@ -72,7 +72,8 @@ def process_pull_request(g, token, pr):
 		show_code_snippet=True,
 		snippet_context_lines=2,
 		hosting_ref=pr.merge_commit_sha,
-		hosting_repo_url=pr.repo_url
+		hosting_repo_url=pr.repo_url,
+		files_dir=pr.files_dir
 	)
 	report = generator.generate(all_messages)
 	print(report)
