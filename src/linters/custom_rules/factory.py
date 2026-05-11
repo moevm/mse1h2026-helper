@@ -6,7 +6,7 @@ from .nested_loops_rule import NestedLoopsRule
 
 class RuleFactory:
 	_file_rules: List[FileRule] = [
-		NestedLoopsRule(max_depth=2),
+		NestedLoopsRule(max_depth=3),
 	]
 
 	_pr_rules: List[PRRule] = [

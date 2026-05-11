@@ -9,7 +9,7 @@ from .base import FileRule
 from .ast_cache import ASTCache
 
 class NestedLoopsRule(FileRule):
-	def __init__(self, max_depth: int = 3):
+	def __init__(self, max_depth: int):
 		self.max_depth = max_depth
 		self.ast_cache = ASTCache()
 
