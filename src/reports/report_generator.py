@@ -10,22 +10,13 @@ TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 class ReportGenerator:
 	def __init__(
 		self,
+		pr,
 		show_code_snippet: bool = True,
-		snippet_context_lines: int = 2,
-		hosting_ref: Optional[str] = None,
-		hosting_repo_url: Optional[str] = None,
-		files_dir: str = None
+		snippet_context_lines: int = 2
 	):
+		self.pr = pr
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
-
-		self._hosting_info = None
-		if hosting_ref and hosting_repo_url:
-			self._hosting_info = {
-				'ref': hosting_ref,
-				'repo_url': hosting_repo_url.rstrip('/')
-			}
-		self._files_dir = Path(files_dir) if files_dir else None
 
 	def generate(self, messages: List[Message]) -> str:
 		if not messages:
@@ -55,10 +46,10 @@ class ReportGenerator:
 		return grouped
 
 	def _get_repo_relative_path(self, file_path: str) -> str:
-		if not self._files_dir:
+		if not self.pr or not self.pr.files_dir:
 			return Path(file_path).name
 		try:
-			return Path(file_path).relative_to(self._files_dir).as_posix()
+			return Path(file_path).relative_to(self.pr.files_dir).as_posix()
 		except ValueError:
 			return Path(file_path).name
 
@@ -66,13 +57,13 @@ class ReportGenerator:
 		return 'github' if 'github.com' in repo_url else 'forgejo'
 
 	def _make_link(self, msg: Message) -> str:
-		if not self._hosting_info:
+		if not self.pr:
 			return f'{file_path}:{line}:{column}'
 
 		file_path, line, column = msg.abspath, msg.line, msg.column
 		commit_sha = getattr(msg, 'specified_commit', None)
 
-		base = self._hosting_info['repo_url'].rstrip('/')
+		base = self.pr.repo_url.rstrip('/')
 
 		if commit_sha:
 			return f'{base}/commit/{commit_sha}'
@@ -81,7 +72,7 @@ class ReportGenerator:
 
 		if clean_path:
 			hosting = self._detect_hosting(base)
-			ref = self._hosting_info['ref']
+			ref = self.pr.merge_commit_sha
 			if hosting == 'github':
 				return f'{base}/blob/{ref}/{clean_path}#L{line}'
 			else:
