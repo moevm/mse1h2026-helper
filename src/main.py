@@ -34,25 +34,25 @@ def parse_pr_list(list_str):
 
 def pr_passes_filters(pr, args) -> bool:
 	if args.pr_filter_name and args.pr_filter_name not in pr.title:
-		return False
+		return f'заголовок не содержит подстроку "{args.pr_filter_name}"'
 	
 	if args.pr_filter_date_from:
 		from_date = datetime.strptime(args.pr_filter_date_from, '%d.%m.%Y').date()
 		if pr.created_at.date() < from_date:
-			return False
+			return f'создан раньше {args.pr_filter_date_from}'
 	
 	if args.pr_filter_date_to:
 		to_date = datetime.strptime(args.pr_filter_date_to, '%d.%m.%Y').date()
 		if pr.created_at.date() > to_date:
-			return False
+			return f'создан позже {args.pr_filter_date_to}'
 	
 	if args.pr_filter_labels:
 		required_labels = {label.strip() for label in args.pr_filter_labels.split(',') if label.strip()}
 		pr_labels = set(pr.labels or [])
 		if not required_labels.intersection(pr_labels):
-			return False
+			return f'нет ни одной из указанных меток: {args.pr_filter_labels}'
 	
-	return True
+	return None
 
 def collect_pr_urls(args):
 	pr_urls = []
@@ -136,10 +136,11 @@ def main():
 			if i > 0:
 				print('\n====================================\n')
 			g = login(args.token, pr_url)
-
 			pr = get_pull_request(g, pr_url)
-
-			if not pr_passes_filters(pr, args):
+			
+			skip_reason = pr_passes_filters(pr, args)
+			if skip_reason:
+				print(f'Пропуск PR {pr_url}: {skip_reason}')
 				continue
 
 			process_pull_request(g, args.token, pr)
