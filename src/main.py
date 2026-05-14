@@ -1,6 +1,8 @@
 import argparse
 import re
 import sys
+from datetime import datetime
+import tempfile
 
 from .hosting_fetcher import login, get_pull_request
 from .linters import LinterFactory
@@ -29,6 +31,28 @@ def parse_pr_list(list_str):
 		return [int(num.strip()) for num in list_str.split(',')]
 	except ValueError:
 		raise ValueError(f'Invalid PR list format: {list_str}')
+
+def pr_passes_filters(pr, args) -> bool:
+	if args.pr_filter_name and args.pr_filter_name not in pr.title:
+		return False
+	
+	if args.pr_filter_date_from:
+		from_date = datetime.strptime(args.pr_filter_date_from, '%d.%m.%Y').date()
+		if pr.created_at.date() < from_date:
+			return False
+	
+	if args.pr_filter_date_to:
+		to_date = datetime.strptime(args.pr_filter_date_to, '%d.%m.%Y').date()
+		if pr.created_at.date() > to_date:
+			return False
+	
+	if args.pr_filter_labels:
+		required_labels = {label.strip() for label in args.pr_filter_labels.split(',') if label.strip()}
+		pr_labels = set(pr.labels or [])
+		if not required_labels.intersection(pr_labels):
+			return False
+	
+	return True
 
 def collect_pr_urls(args):
 	pr_urls = []
@@ -87,6 +111,10 @@ def main():
 	parser.add_argument('--pr-range', help='Диапазон номеров PR (например, 1-6)')
 	parser.add_argument('--pr-include', help='Список номеров PR для включения (например, 6,42)')
 	parser.add_argument('--pr-exclude', help='Список номеров PR для исключения (например, 6,42)')
+	parser.add_argument('--pr-filter-name', help='Фильтр по имени PR (должно содержать строку)')
+	parser.add_argument('--pr-filter-date-from', help='Фильтр по дате: от (формат: DD.MM.YYYY)')
+	parser.add_argument('--pr-filter-date-to', help='Фильтр по дате: до (формат: DD.MM.YYYY)')
+	parser.add_argument('--pr-filter-labels', help='Фильтр по меткам (убирает пулл-реквесты, у которых нет хотя бы одной из указанных меток)')
 	if len(sys.argv) == 1:
 		parser.print_help()
 		sys.exit(1)
@@ -108,7 +136,12 @@ def main():
 			if i > 0:
 				print('\n====================================\n')
 			g = login(args.token, pr_url)
+
 			pr = get_pull_request(g, pr_url)
+
+			if not pr_passes_filters(pr, args):
+				continue
+
 			process_pull_request(g, args.token, pr)
 	except Exception as e:
 		print(f'Error: {e}')
