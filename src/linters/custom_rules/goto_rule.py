@@ -6,15 +6,13 @@ from pylint.interfaces import UNDEFINED
 from typing import List, Any
 
 from .base import FileRule
-from .cpp_ast_cache import CppASTCache
-from ...config import SUPPORTED_EXTENSIONS
-
-CPP_EXTENSIONS = {ext for ext in SUPPORTED_EXTENSIONS if ext != '.py'}
+from .ast_cache import ASTCache
+from ...config import CPP_EXTENSIONS
 
 
 class GotoRule(FileRule):
 	def __init__(self):
-		self.ast_cache = CppASTCache()
+		self.ast_cache = ASTCache()
 
 	def check(self, context: dict[str, Any]) -> List[Message]:
 		file_path = context.get('file_path', '')

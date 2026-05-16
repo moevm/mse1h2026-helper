@@ -7,6 +7,7 @@ from typing import List, Any
 
 from .base import FileRule
 from .ast_cache import ASTCache
+from ...config import PYTHON_EXTENSIONS
 
 class NestedLoopsRule(FileRule):
 	def __init__(self, max_depth: int):
@@ -18,7 +19,7 @@ class NestedLoopsRule(FileRule):
 		if not file_path:
 			return []
 
-		if PurePath(file_path).suffix != '.py':
+		if PurePath(file_path).suffix not in PYTHON_EXTENSIONS:
 			return []
 
 		tree = self.ast_cache.parse_file(file_path)

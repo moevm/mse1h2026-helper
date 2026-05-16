@@ -1,13 +1,13 @@
 from .base import Linter
 from .pylint_runner import PylintWrapper
 from .oclint_runner import OCLintWrapper
-from ..config import SUPPORTED_EXTENSIONS
+from ..config import PYTHON_EXTENSIONS, CPP_EXTENSIONS
 
 
 class LinterFactory:
 	_linters = {
-		'.py': PylintWrapper(),
-		**{ext: OCLintWrapper() for ext in SUPPORTED_EXTENSIONS if ext != '.py'}
+		**{ext: PylintWrapper() for ext in PYTHON_EXTENSIONS},
+		**{ext: OCLintWrapper() for ext in CPP_EXTENSIONS}
 	}
 
 	@classmethod

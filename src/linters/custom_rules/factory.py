@@ -5,6 +5,7 @@ from .commit_size_rule import CommitSizeRule
 from .nested_loops_rule import NestedLoopsRule
 from .goto_rule import GotoRule
 
+
 class RuleFactory:
 	_file_rules: List[FileRule] = [
 		NestedLoopsRule(max_depth=3),
