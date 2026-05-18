@@ -1,6 +1,8 @@
 import argparse
 import re
 import sys
+from datetime import datetime
+import tempfile
 
 from .hosting_fetcher import login, get_pull_request
 from .linters import LinterFactory
@@ -12,8 +14,10 @@ GITHUB_PR_URL_REGEX = re.compile(r'^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$
 FORGEJO_PR_URL_REGEX = re.compile(r'^https?://[^/]+/[^/]+/[^/]+/pulls?/\d+/?$')
 PR_RANGE_REGEX = re.compile(r'^(\d+)-(\d+)$')
 
+
 def is_valid_pr_url(url: str) -> bool:
 	return bool(GITHUB_PR_URL_REGEX.match(url) or FORGEJO_PR_URL_REGEX.match(url))
+
 
 def parse_pr_range(range_str):
 	match = PR_RANGE_REGEX.match(range_str)
@@ -24,11 +28,30 @@ def parse_pr_range(range_str):
 		raise ValueError(f'Invalid PR range: start ({start}) > end ({end})')
 	return list(range(start, end + 1))
 
+
 def parse_pr_list(list_str):
 	try:
 		return [int(num.strip()) for num in list_str.split(',')]
 	except ValueError:
 		raise ValueError(f'Invalid PR list format: {list_str}')
+
+
+def check_pr_against_filters(pr, args) -> str | None:
+	if args.pr_filter_name and args.pr_filter_name not in pr.title:
+		return f'заголовок не содержит подстроку "{args.pr_filter_name}"'
+	if args.pr_filter_date_from:
+		if pr.created_at.date() < args.pr_filter_date_from:
+			return f'создан раньше {args.pr_filter_date_from}'
+	if args.pr_filter_date_to:
+		if pr.created_at.date() > args.pr_filter_date_to:
+			return f'создан позже {args.pr_filter_date_to}'
+	if args.pr_filter_labels:
+		required_labels = {label.strip() for label in args.pr_filter_labels.split(',') if label.strip()}
+		pr_labels = set(pr.labels or [])
+		if not required_labels.issubset(pr_labels):
+			return f'нет ни одной из указанных меток: {args.pr_filter_labels}'
+	return None
+
 
 def collect_pr_urls(args):
 	pr_urls = []
@@ -46,6 +69,7 @@ def collect_pr_urls(args):
 		for pr_num in sorted(pr_numbers):
 			pr_urls.append(f'{repo_url}/pull/{pr_num}')
 	return pr_urls
+
 
 def process_pull_request(g, token, pr):
 	print('PR: ', pr.pr_url)
@@ -74,7 +98,13 @@ def process_pull_request(g, token, pr):
 	report = generator.generate(all_messages)
 	print(report)
 
+
 def main():
+	def parse_date(value):
+		try:
+			return datetime.strptime(value, r'%Y.%m.%d').date()
+		except ValueError:
+			raise argparse.ArgumentTypeError('Дата должна быть в формате YYYY.MM.DD')
 	parser = argparse.ArgumentParser(
 		usage='python main.py [OPTIONS] [PULL_REQUEST_URL ...]',
 		description='Helper for linting Pull Requests'
@@ -87,6 +117,10 @@ def main():
 	parser.add_argument('--pr-range', help='Диапазон номеров PR (например, 1-6)')
 	parser.add_argument('--pr-include', help='Список номеров PR для включения (например, 6,42)')
 	parser.add_argument('--pr-exclude', help='Список номеров PR для исключения (например, 6,42)')
+	parser.add_argument('--pr-filter-name', help='Фильтр по имени PR (должно содержать подстроку)')
+	parser.add_argument('--pr-filter-date-from', help='Фильтр по дате: от (формат: YYYY.MM.DD)', type=parse_date)
+	parser.add_argument('--pr-filter-date-to', help='Фильтр по дате: до (формат: YYYY.MM.DD)', type=parse_date)
+	parser.add_argument('--pr-filter-labels', help='Фильтр по меткам (PR должен иметь все указанные метки)')
 	if len(sys.argv) == 1:
 		parser.print_help()
 		sys.exit(1)
@@ -109,6 +143,12 @@ def main():
 				print('\n====================================\n')
 			g = login(args.token, pr_url)
 			pr = get_pull_request(g, pr_url)
+
+			skip_reason = check_pr_against_filters(pr, args)
+			if skip_reason:
+				print(f'Пропуск PR {pr_url}: {skip_reason}')
+				continue
+
 			process_pull_request(g, args.token, pr)
 	except Exception as e:
 		print(f'Error: {e}')
