@@ -3,6 +3,7 @@ from .base import CustomRule, FileRule, PRRule
 from .commit_size_rule import CommitSizeRule
 from .factory import RuleFactory
 from .nested_loops_rule import NestedLoopsRule
+from .goto_rule import GotoRule
 
 __all__ = [
 	'CustomRule',
@@ -12,4 +13,5 @@ __all__ = [
 	'ASTCache',
 	'CommitSizeRule',
 	'NestedLoopsRule',
+	'GotoRule',
 ]

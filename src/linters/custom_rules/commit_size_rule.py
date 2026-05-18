@@ -10,6 +10,7 @@ from pylint.interfaces import UNDEFINED
 
 from .base import PRRule
 
+
 class CommitSizeRule(PRRule):
 	def __init__(self, threshold: int):
 		self.threshold = threshold
