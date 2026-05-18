@@ -7,11 +7,12 @@ class MessageLocation:
 	abspath: str
 	path: str
 	module: str
-	obj: str = ""
-	line: int = 1
-	column: int = 1
+	obj: str = ''
+	line: Optional[int] = None
+	column: Optional[int] = None
 	end_line: Optional[int] = None
 	end_column: Optional[int] = None
+
 
 @dataclass
 class Message:
@@ -26,23 +27,23 @@ class Message:
 
 	@property
 	def abspath(self) -> str:
-		return self.location.abspath if self.location else ""
+		return self.location.abspath if self.location else ''
 
 	@property
 	def path(self) -> str:
-		return self.location.path if self.location else ""
+		return self.location.path if self.location else ''
 
 	@property
 	def module(self) -> str:
-		return self.location.module if self.location else ""
+		return self.location.module if self.location else ''
 
 	@property
 	def line(self) -> int:
-		return self.location.line if self.location else 1
+		return self.location.line if self.location else None
 
 	@property
 	def column(self) -> int:
-		return self.location.column if self.location else 1
+		return self.location.column if self.location else None
 
 	@property
 	def end_line(self) -> Optional[int]:
