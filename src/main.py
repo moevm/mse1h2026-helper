@@ -1,7 +1,8 @@
 import argparse
-import re
-import sys
 from datetime import datetime
+import re
+import shlex
+import sys
 import tempfile
 
 from .hosting_fetcher import login, get_pull_request
@@ -135,6 +136,11 @@ def main():
 			raise NotImplementedError('Функциональность ещё не реализована')
 		if (args.pr_range or args.pr_include or args.pr_exclude) and not args.repo:
 			raise ValueError('Флаги --pr-range, --pr-include, --pr-exclude требуют указания --repo')
+		if args.pylint:
+			linter_options.pylint_options = []
+			for opt in shlex.split(args.pylint):
+				if opt:
+					linter_options.pylint_options.append(opt)
 		pr_urls = collect_pr_urls(args)
 		if not pr_urls:
 			raise ValueError('Не указаны PR для анализа')
