@@ -71,7 +71,7 @@ class OCLintWrapper(Linter):
 			priority = int(v.get('priority', 3) or 3)
 			msg_id = self._msg_id_for_priority(priority)
 			symbol = str(v.get('rule', '')).replace(' ', '_')
-			msg_text = str(v.get('message', ''))
+			msg_text = str(v.get('message') or v.get('rule') or '')
 
 			location = MessageLocationTuple(
 				abspath=path,
