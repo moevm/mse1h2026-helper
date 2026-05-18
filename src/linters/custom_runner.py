@@ -1,8 +1,8 @@
-from pylint.message import Message
 from typing import Any, List
 
 from .base import Linter
 from .custom_rules import RuleFactory
+from ..reports.message import Message
 
 class CustomRulesWrapper(Linter):
 	def __init__(self, context: dict[str, Any] | None = None):

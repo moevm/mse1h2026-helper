@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
-from pylint.message import Message
+from .message import Message
 
 TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 
