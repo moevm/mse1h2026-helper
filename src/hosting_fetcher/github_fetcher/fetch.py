@@ -5,6 +5,7 @@ import shutil
 from github import Github, GithubException
 
 from ...config import SUPPORTED_EXTENSIONS
+from ...logger import info, warning
 from ..pull_request import PullRequest
 from ..utils import safe_str
 
@@ -27,6 +28,7 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 		raise ValueError(f'Невалидная GitHub PR ссылка: {pr_url}')
 	repo = client.get_repo(f'{owner}/{repo_name}')
 	pr = repo.get_pull(pr_number)
+	info('PR найден')
 	labels = [label.name for label in pr.get_labels()]
 	commits = [commit.sha for commit in pr.get_commits()]
 	user_id = safe_str(
@@ -73,6 +75,7 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 				f.write(content)
 			pr_obj.files.append(local_path)
 		except GithubException as e:
-			print(f'Не удалось скачать {file.filename}: {e}')
+			warning(f'Не удалось скачать {file.filename}: {e}')
 			continue
+	info('Данные загружены')
 	return pr_obj

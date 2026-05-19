@@ -8,6 +8,7 @@ from .linters.custom_runner import CustomRulesWrapper
 from .linters import LinterFactory
 from .linters import options as linter_options
 from .hosting_fetcher import login, get_pull_request
+from .logger import info, warning, error, set_quiet
 from .reports import ReportGenerator
 
 GITHUB_PR_URL_REGEX = re.compile(r'^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$')
@@ -85,7 +86,9 @@ def process_pull_request(g, token, pr) -> list | None:
 
 	custom_linter = CustomRulesWrapper(context=context)
 
-	for file_path in pr.files:
+	total = len(pr.files)
+	for idx, file_path in enumerate(pr.files, start=1):
+		info(f'Обработка файла {file_path} ({idx}/{total})')
 		linter = LinterFactory.get_linter(file_path)
 		all_messages.extend(linter.run(file_path))
 		all_messages.extend(custom_linter.run(file_path=file_path))
@@ -116,14 +119,17 @@ def main():
 	parser.add_argument('--pr-filter-date-from', help='Фильтр по дате: от (формат: YYYY.MM.DD)', type=parse_date)
 	parser.add_argument('--pr-filter-date-to', help='Фильтр по дате: до (формат: YYYY.MM.DD)', type=parse_date)
 	parser.add_argument('--pr-filter-labels', help='Фильтр по меткам (PR должен иметь все указанные метки)')
+	parser.add_argument('-q', '--quiet', action='store_true', help='Отключить отладочные сообщения')
 	if len(sys.argv) == 1:
 		parser.print_help()
 		sys.exit(1)
 	args, remaining = parser.parse_known_args()
 	args.pr_urls = remaining
+	set_quiet(args.quiet)
 	invalid = [url for url in args.pr_urls if not is_valid_pr_url(url)]
 	if invalid:
-		raise ValueError(f'Invalid PR URL(s): {", ".join(invalid)}')
+		error(f'Invalid PR URL(s): {", ".join(invalid)}')
+		sys.exit(1)
 	del invalid
 	try:
 		if args.severity or args.oclint:
@@ -145,7 +151,7 @@ def main():
 
 			skip_reason = check_pr_against_filters(pr, args)
 			if skip_reason:
-				print(f'Пропуск PR {pr_url}: {skip_reason}')
+				info(f'Пропуск PR {pr_url}: {skip_reason}')
 				continue
 			
 			results.append((pr, process_pull_request(g, args.token, pr)))
@@ -153,7 +159,7 @@ def main():
 		ReportGenerator().generate(results)
 
 	except Exception as e:
-		print(f'Error: {e}')
+		error(str(e))
 		sys.exit(1)
 
 

@@ -5,6 +5,7 @@ import shutil
 from urllib.parse import urlparse
 
 from ...config import SUPPORTED_EXTENSIONS
+from ...logger import info, warning
 from ..pull_request import PullRequest
 from ..utils import safe_str
 from ..utils import parse_datetime
@@ -44,6 +45,7 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 	response = client.get(url)
 	response.raise_for_status()
 	pr_data = response.json()
+	info('PR найден')
 	commits_url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}/commits'
 	commits_response = client.get(commits_url)
 	commits_response.raise_for_status()
@@ -104,7 +106,8 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 					f.write(file_response.content)
 				pr_obj.files.append(local_path)
 		except Exception as e:
-			print(f'Не удалось скачать {filename}: {e}')
+			warning(f'Не удалось скачать {filename}: {e}')
 			continue
 
+	info('Данные загружены')
 	return pr_obj
