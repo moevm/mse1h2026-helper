@@ -1,14 +1,13 @@
 import argparse
-from datetime import datetime
 import re
 import shlex
 import sys
-import tempfile
+from datetime import datetime
 
-from .hosting_fetcher import login, get_pull_request
-from .linters import LinterFactory
 from .linters.custom_runner import CustomRulesWrapper
+from .linters import LinterFactory
 from .linters import options as linter_options
+from .hosting_fetcher import login, get_pull_request
 from .reports import ReportGenerator
 
 GITHUB_PR_URL_REGEX = re.compile(r'^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$')
