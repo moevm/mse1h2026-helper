@@ -4,11 +4,11 @@ import urllib.request
 from typing import Any, List
 from urllib.parse import urlparse
 
-from pylint.message import Message
-from pylint.typing import MessageLocationTuple
 from pylint.interfaces import UNDEFINED
 
 from .base import PRRule
+from ...reports.message import Message, MessageLocation
+
 
 
 class CommitSizeRule(PRRule):
@@ -60,12 +60,12 @@ class CommitSizeRule(PRRule):
 							symbol='large_commit_size',
 							msg=f'Коммит {sha[:8]}: {total_lines} строк (лимит: {self.threshold})',
 							priority=2,
-							location=MessageLocationTuple(
+							location=MessageLocation(
 								abspath='.', path='.', module=f'COMMIT {sha[:8]}',
 								obj='', line=1, column=1, end_line=None, end_column=None,
-							)
+							),
+							specified_commit = sha
 						)
-						message.specified_commit = sha
 						messages.append(message)
 				except Exception as e:
 					print(f'[CustomRules] GitHub commit {sha} error: {e}')
@@ -110,12 +110,12 @@ class CommitSizeRule(PRRule):
 							symbol='large_commit_size',
 							msg=f'Коммит {sha[:8]}: {total_lines} строк (лимит: {self.threshold})',
 							priority=2,
-							location=MessageLocationTuple(
+							location=MessageLocation(
 								abspath='.', path='.', module=f'COMMIT {sha[:8]}',
 								obj='', line=1, column=1, end_line=None, end_column=None,
-							)
+							),
+							specified_commit = sha
 						)
-						message.specified_commit = sha
 						messages.append(message)
 				except Exception as e:
 					print(f'[CustomRules] Forgejo commit {sha} error: {e}')
@@ -123,10 +123,10 @@ class CommitSizeRule(PRRule):
 		return messages
 
 	def _make_message(self, symbol: str, msg: str,
-		location: MessageLocationTuple | None = None,
-		priority: int = 3) -> Message:
+		location: MessageLocation | None = None,
+		priority: int = 3, specified_commit: str = None) -> Message:
 		if location is None:
-			location = MessageLocationTuple(
+			location = MessageLocation(
 				abspath='.', path='.', module='CUSTOM_RULES',
 				obj='', line=1, column=1, end_line=None, end_column=None,
 			)
@@ -139,8 +139,9 @@ class CommitSizeRule(PRRule):
 			location=location,
 			msg=msg,
 			confidence=UNDEFINED,
+			linter = 'CustomRules',
+			specified_commit = specified_commit
 		)
-		message.linter = 'CustomRules'
 		return message
 
 	def _msg_id_for_priority(self, priority: int) -> str:

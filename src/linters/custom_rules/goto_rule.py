@@ -1,13 +1,13 @@
 import clang.cindex
 from pathlib import PurePath
-from pylint.message import Message
-from pylint.typing import MessageLocationTuple
-from pylint.interfaces import UNDEFINED
 from typing import List, Any
+
+from pylint.interfaces import UNDEFINED
 
 from .base import FileRule
 from .ast_cache import ASTCache
 from ...config import CPP_EXTENSIONS
+from ...reports.message import Message, MessageLocation
 
 
 class GotoRule(FileRule):
@@ -41,7 +41,7 @@ class GotoRule(FileRule):
 		return messages
 
 	def _make_message(self, file_path: str, line: int, column: int) -> Message:
-		location = MessageLocationTuple(
+		location = MessageLocation(
 			abspath=file_path,
 			path=file_path,
 			module='',
@@ -58,8 +58,8 @@ class GotoRule(FileRule):
 			location=location,
 			msg=f'Найден оператор goto',
 			confidence=UNDEFINED,
+			linter = 'CustomRules'
 		)
-		message.linter = 'CustomRules'
 		return message
 
 class GotoVisitor:

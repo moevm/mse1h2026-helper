@@ -2,11 +2,10 @@ import json
 import subprocess
 from pathlib import PurePath
 
-from pylint.message import Message
-from pylint.typing import MessageLocationTuple
 from pylint.interfaces import UNDEFINED
 
 from .base import Linter
+from ..reports.message import Message, MessageLocation
 
 
 class OCLintWrapper(Linter):
@@ -73,7 +72,7 @@ class OCLintWrapper(Linter):
 			symbol = str(v.get('rule', '')).replace(' ', '_')
 			msg_text = str(v.get('message') or v.get('rule') or '')
 
-			location = MessageLocationTuple(
+			location = MessageLocation(
 				abspath=path,
 				path=path,
 				module=PurePath(path).stem,
@@ -85,13 +84,13 @@ class OCLintWrapper(Linter):
 			)
 
 			message = Message(
-						msg_id=msg_id,
-						symbol=symbol,
-						location=location,
-						msg=msg_text,
-						confidence=UNDEFINED,
-					)
-			message.linter = 'OCLint'
+				msg_id=msg_id,
+				symbol=symbol,
+				location=location,
+				msg=msg_text,
+				confidence=UNDEFINED,
+				linter='OCLint'
+			)
 			messages.append(message)
 
 		return messages

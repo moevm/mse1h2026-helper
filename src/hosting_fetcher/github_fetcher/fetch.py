@@ -15,7 +15,7 @@ def _cleanup_dir(path: str) -> None:
 
 
 def get_pull_request(client: Github, pr_url: str) -> PullRequest:
-	tmpdir = tempfile.mkdtemp(prefix=f"pr_{hash(pr_url)}_")
+	tmpdir = tempfile.mkdtemp(prefix=f'pr_{hash(pr_url)}_')
 	atexit.register(_cleanup_dir, tmpdir)
 	path = pr_url.replace('https://github.com', '').strip('/')
 	parts = path.split('/')

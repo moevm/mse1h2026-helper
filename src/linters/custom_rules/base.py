@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
 
-from pylint.message import Message
+from ...reports.message import Message
 
 
 class CustomRule(ABC):

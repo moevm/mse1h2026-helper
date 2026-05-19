@@ -1,13 +1,14 @@
 import ast
 from pathlib import PurePath
-from pylint.message import Message
-from pylint.typing import MessageLocationTuple
-from pylint.interfaces import UNDEFINED
 from typing import List, Any
+
+from pylint.interfaces import UNDEFINED
 
 from .base import FileRule
 from .ast_cache import ASTCache
+
 from ...config import PYTHON_EXTENSIONS
+from ...reports.message import Message, MessageLocation
 
 class NestedLoopsRule(FileRule):
 	def __init__(self, max_depth: int):
@@ -42,7 +43,7 @@ class NestedLoopsRule(FileRule):
 		return messages
 
 	def _make_message(self, file_path: str, line: int, column: int, depth: int) -> Message:
-		location = MessageLocationTuple(
+		location = MessageLocation(
 			abspath=file_path,
 			path=file_path,
 			module='',
@@ -59,8 +60,8 @@ class NestedLoopsRule(FileRule):
 			location=location,
 			msg=f'Вложенность циклов {depth} превышает максимум {self.max_depth}',
 			confidence=UNDEFINED,
+			linter = 'CustomRules'
 		)
-		message.linter = 'CustomRules'
 		return message
 
 class LoopDepthVisitor(ast.NodeVisitor):
