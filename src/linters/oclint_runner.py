@@ -89,7 +89,7 @@ class OCLintWrapper(Linter):
 				location=location,
 				msg=msg_text,
 				confidence=UNDEFINED,
-				linter="OCLint"
+				linter='OCLint'
 			)
 			messages.append(message)
 

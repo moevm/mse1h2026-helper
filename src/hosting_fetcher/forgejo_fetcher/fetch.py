@@ -35,8 +35,9 @@ def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
 		raise ValueError(f'Не найдена секция pulls/pull в URL: {pr_url}')
 	return owner, repo_name, pr_number
 
+
 def get_pull_request(client, pr_url: str) -> PullRequest:
-	tmpdir = tempfile.mkdtemp(prefix=f"pr_{hash(pr_url)}_")
+	tmpdir = tempfile.mkdtemp(prefix=f'pr_{hash(pr_url)}_')
 	atexit.register(_cleanup_dir, tmpdir)
 	owner, repo_name, pr_number = parse_pr_url(pr_url)
 	url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}'
