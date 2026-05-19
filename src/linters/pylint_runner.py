@@ -4,7 +4,7 @@ from pylint.lint import pylinter, Run
 from pylint.reporters import CollectingReporter
 
 from .base import Linter
-from .options import pylint_options
+from . import options
 
 DEFAULT_OPTIONS = ['--score=n', '--disable=bad-indentation,missing-final-newline']
 
@@ -14,7 +14,7 @@ class PylintWrapper(Linter):
 		pylinter.MANAGER.clear_cache()
 		reporter = CollectingReporter()
 		try:
-			Run([file_path] + (pylint_options or DEFAULT_OPTIONS), reporter=reporter, exit=False)
+			Run([file_path] + (options.pylint_options or DEFAULT_OPTIONS), reporter=reporter, exit=False)
 		except Exception as e:
 			return f'Pylint API Error: {str(e)}'
 		for message in reporter.messages:
