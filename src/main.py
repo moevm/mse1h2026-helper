@@ -71,11 +71,9 @@ def collect_pr_urls(args):
 	return pr_urls
 
 
-def process_pull_request(g, token, pr):
-	print('PR: ', pr.pr_url)
+def process_pull_request(g, token, pr) -> list | None:
 	if not pr.files:
-		print(f'Warning: No suitable files found in PR {pr.pr_url}')
-		return
+		return None
 
 	all_messages = []
 
@@ -93,10 +91,7 @@ def process_pull_request(g, token, pr):
 		all_messages.extend(custom_linter.run(file_path=file_path))
 
 	all_messages.extend(custom_linter.run(file_path=''))
-
-	generator = ReportGenerator(pr, show_code_snippet=True, snippet_context_lines=2)
-	report = generator.generate(all_messages)
-	print(report)
+	return all_messages
 
 
 def main():
@@ -143,9 +138,8 @@ def main():
 		pr_urls = collect_pr_urls(args)
 		if not pr_urls:
 			raise ValueError('Не указаны PR для анализа')
-		for i, pr_url in enumerate(pr_urls):
-			if i > 0:
-				print('\n====================================\n')
+		results = []
+		for pr_url in pr_urls:
 			g = login(args.token, pr_url)
 			pr = get_pull_request(g, pr_url)
 
@@ -153,8 +147,11 @@ def main():
 			if skip_reason:
 				print(f'Пропуск PR {pr_url}: {skip_reason}')
 				continue
+			
+			results.append((pr, process_pull_request(g, args.token, pr)))
 
-			process_pull_request(g, args.token, pr)
+		ReportGenerator().generate(results)
+
 	except Exception as e:
 		print(f'Error: {e}')
 		sys.exit(1)

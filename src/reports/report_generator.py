@@ -7,7 +7,7 @@ from .message import Message
 TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 
 
-class ReportGenerator:
+class PullRequestReportGenerator:
 	def __init__(
 		self,
 		pr,
@@ -125,3 +125,38 @@ class ReportGenerator:
 			snippet.append(f'{marker} {line_num:4d} | {content}')
 
 		return snippet
+
+
+class ReportGenerator:
+	def __init__(self, show_code_snippet: bool = True, snippet_context_lines: int = 2):
+		self.show_code_snippet = show_code_snippet
+		self.snippet_context_lines = snippet_context_lines
+
+	def generate(self, results: list[tuple]) -> None:
+		groups: dict = {}
+		for pr, messages in results:
+			groups.setdefault(pr.repo_url, []).append((pr, messages))
+
+		def repo_sort_key(url: str) -> str:
+			parts = url.rstrip('/').split('/')
+			return '/'.join(parts[-2:]).lower()
+
+		first = True
+		for repo_url in sorted(groups.keys(), key=repo_sort_key):
+			for pr, messages in sorted(groups[repo_url], key=lambda x: x[0].number):
+				if not first:
+					print('\n====================================\n')
+				first = False
+
+				print('PR: ', pr.pr_url)
+
+				if messages is None:
+					print(f'Warning: No suitable files found in PR {pr.pr_url}')
+					continue
+
+				pr_generator = PullRequestReportGenerator(
+					pr,
+					show_code_snippet=self.show_code_snippet,
+					snippet_context_lines=self.snippet_context_lines,
+				)
+				print(pr_generator.generate(messages))
