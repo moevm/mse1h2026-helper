@@ -33,7 +33,7 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 	user_id = safe_str(
 		getattr(pr.user, 'name', None) or getattr(pr.user, 'login', None)
 	)
-	info(f'PR #{pr_number} найден: "{pr.title}" от {user_id} ({pr.created_at})')
+	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
 	pr_obj = PullRequest(
 		body=safe_str(pr.body),
 		changed_files=pr.changed_files or 0,
@@ -77,8 +77,5 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 		except GithubException as e:
 			warning(f'Не удалось скачать {file.filename}: {e}')
 			continue
-	labels_str = ', '.join(labels) if labels else 'нет'
-	info(f'Изменения: +{pr.additions}/-{pr.deletions} строк, {pr.changed_files} файлов, теги: [{labels_str}]')
-
 	info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj

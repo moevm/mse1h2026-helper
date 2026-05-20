@@ -89,7 +89,7 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 		files=[],
 	)
 
-	info(f'PR #{pr_number} найден: "{pr_obj.title}" от {user_id} ({pr_obj.created_at})')
+	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
 
 	head_sha = pr_data['head'].get('sha')
 	for file_info in files:
@@ -109,11 +109,6 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 		except Exception as e:
 			warning(f'Не удалось скачать {filename}: {e}')
 			continue
-
-	additions = sum(f.get('additions', 0) for f in files)
-	deletions = sum(f.get('deletions', 0) for f in files)
-	labels_str = ', '.join(labels) if labels else 'нет'
-	info(f'Изменения: +{additions}/-{deletions} строк, {changed_files} файлов, теги: [{labels_str}]')
 
 	info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj
