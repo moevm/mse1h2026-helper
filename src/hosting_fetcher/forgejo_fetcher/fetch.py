@@ -45,7 +45,6 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 	response = client.get(url)
 	response.raise_for_status()
 	pr_data = response.json()
-	info('PR найден')
 	commits_url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}/commits'
 	commits_response = client.get(commits_url)
 	commits_response.raise_for_status()
@@ -90,6 +89,8 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 		files=[],
 	)
 
+	info(f'PR #{pr_number} найден: "{pr_obj.title}" от {user_id} ({pr_obj.created_at})')
+
 	head_sha = pr_data['head'].get('sha')
 	for file_info in files:
 		filename = file_info['filename']
@@ -109,5 +110,10 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 			warning(f'Не удалось скачать {filename}: {e}')
 			continue
 
-	info('Данные загружены')
+	additions = sum(f.get('additions', 0) for f in files)
+	deletions = sum(f.get('deletions', 0) for f in files)
+	labels_str = ', '.join(labels) if labels else 'нет'
+	info(f'Изменения: +{additions}/-{deletions} строк, {changed_files} файлов, теги: [{labels_str}]')
+
+	info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj

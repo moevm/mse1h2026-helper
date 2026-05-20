@@ -14,5 +14,4 @@ def login(token: str, pr_url: str) -> Union[Github, requests.Session]:
 		client = github_fetcher.login(token)
 	else:
 		client = forgejo_fetcher.login(pr_url, token)
-	info(f'Авторизация PR: {pr_url}')
 	return client

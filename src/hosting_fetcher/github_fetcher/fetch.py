@@ -28,12 +28,12 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 		raise ValueError(f'Невалидная GitHub PR ссылка: {pr_url}')
 	repo = client.get_repo(f'{owner}/{repo_name}')
 	pr = repo.get_pull(pr_number)
-	info('PR найден')
 	labels = [label.name for label in pr.get_labels()]
 	commits = [commit.sha for commit in pr.get_commits()]
 	user_id = safe_str(
 		getattr(pr.user, 'name', None) or getattr(pr.user, 'login', None)
 	)
+	info(f'PR #{pr_number} найден: "{pr.title}" от {user_id} ({pr.created_at})')
 	pr_obj = PullRequest(
 		body=safe_str(pr.body),
 		changed_files=pr.changed_files or 0,
@@ -77,5 +77,8 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 		except GithubException as e:
 			warning(f'Не удалось скачать {file.filename}: {e}')
 			continue
-	info('Данные загружены')
+	labels_str = ', '.join(labels) if labels else 'нет'
+	info(f'Изменения: +{pr.additions}/-{pr.deletions} строк, {pr.changed_files} файлов, теги: [{labels_str}]')
+
+	info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj
