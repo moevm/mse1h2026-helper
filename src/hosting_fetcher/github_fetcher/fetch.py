@@ -77,5 +77,7 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 		except GithubException as e:
 			warning(f'Не удалось скачать {file.filename}: {e}')
 			continue
-	info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
+
+	if pr_obj.files:
+		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj

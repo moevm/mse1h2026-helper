@@ -110,5 +110,6 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 			warning(f'Не удалось скачать {filename}: {e}')
 			continue
 
-	info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
+	if pr_obj.files:
+		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj
