@@ -64,6 +64,8 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 	user_id = safe_str(
 		user.get('login_name') or user.get('login') or user.get('username')
 	)
+	user_login = safe_str(user.get('login_name') or user.get('login') or user.get('username'))
+	user_name = safe_str(user.get('full_name') or user.get('name'))
 	pr_obj = PullRequest(
 		body=safe_str(pr_data.get('body')),
 		changed_files=changed_files,
@@ -85,6 +87,8 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 		org_id=owner,
 		repo_id=repo_name,
 		user_id=user_id,
+		author_username=user_login,
+		author_name=user_name,
 		files_dir=tmpdir,
 		files=[],
 	)
