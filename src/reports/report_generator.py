@@ -149,7 +149,14 @@ class ReportGenerator:
 					print('\n====================================\n')
 				first = False
 
+				author_display = pr.author_username
+				if pr.author_name:
+					author_display = f'{pr.author_username} ({pr.author_name})'
+				date_str = pr.created_at.strftime('%Y.%m.%d') if pr.created_at else 'N/A'
+				print('\nRepository: ', pr.repo_url)
 				print('PR: ', pr.pr_url)
+				print('Author: ', author_display)
+				print('Date: ', date_str)
 
 				if not pr.files:
 					warning(f'Warning: No suitable files found in PR {pr.pr_url}')
