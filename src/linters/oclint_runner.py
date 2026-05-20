@@ -56,7 +56,6 @@ class OCLintWrapper(Linter):
 			)
 
 		violations = data.get('violation', [])
-		print(f'OCLint violations: {len(violations)}', flush=True)
 
 		messages = []
 
