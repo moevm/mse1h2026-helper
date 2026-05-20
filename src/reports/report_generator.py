@@ -150,7 +150,7 @@ class ReportGenerator:
 
 				print('PR: ', pr.pr_url)
 
-				if messages is None:
+				if not pr.files:
 					print(f'Warning: No suitable files found in PR {pr.pr_url}')
 					continue
 
