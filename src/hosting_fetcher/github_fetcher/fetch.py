@@ -5,6 +5,7 @@ import shutil
 from github import Github, GithubException
 
 from ...config import SUPPORTED_EXTENSIONS
+from ...logger import info, warning
 from ..pull_request import PullRequest
 from ..utils import safe_str
 
@@ -32,6 +33,7 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 	user_id = safe_str(
 		getattr(pr.user, 'name', None) or getattr(pr.user, 'login', None)
 	)
+	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
 	pr_obj = PullRequest(
 		body=safe_str(pr.body),
 		changed_files=pr.changed_files or 0,
@@ -73,6 +75,9 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 				f.write(content)
 			pr_obj.files.append(local_path)
 		except GithubException as e:
-			print(f'Не удалось скачать {file.filename}: {e}')
+			warning(f'Не удалось скачать {file.filename}: {e}')
 			continue
+
+	if pr_obj.files:
+		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj

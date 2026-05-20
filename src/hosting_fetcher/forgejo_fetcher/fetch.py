@@ -5,6 +5,7 @@ import shutil
 from urllib.parse import urlparse
 
 from ...config import SUPPORTED_EXTENSIONS
+from ...logger import info, warning
 from ..pull_request import PullRequest
 from ..utils import safe_str
 from ..utils import parse_datetime
@@ -88,6 +89,8 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 		files=[],
 	)
 
+	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
+
 	head_sha = pr_data['head'].get('sha')
 	for file_info in files:
 		filename = file_info['filename']
@@ -104,7 +107,9 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 					f.write(file_response.content)
 				pr_obj.files.append(local_path)
 		except Exception as e:
-			print(f'Не удалось скачать {filename}: {e}')
+			warning(f'Не удалось скачать {filename}: {e}')
 			continue
 
+	if pr_obj.files:
+		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
 	return pr_obj

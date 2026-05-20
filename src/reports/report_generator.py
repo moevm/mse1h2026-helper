@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .message import Message
+from ..logger import warning
 
 TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 
@@ -151,7 +152,7 @@ class ReportGenerator:
 				print('PR: ', pr.pr_url)
 
 				if not pr.files:
-					print(f'Warning: No suitable files found in PR {pr.pr_url}')
+					warning(f'Warning: No suitable files found in PR {pr.pr_url}')
 					continue
 
 				pr_generator = PullRequestReportGenerator(
