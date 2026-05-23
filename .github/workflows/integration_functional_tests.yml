@@ -40,6 +40,7 @@ jobs:
           fi
 
           grep -q "[OCLint]" cpp_github.log || (echo "Missing OCLint output" && exit 1)
+          grep -q "[CustomRules]" cpp_github.log || (echo "Missing CustomRules output" && exit 1)
           grep -q "main.cpp" cpp_github.log || echo "No C++ files found"
           grep -q "Traceback" cpp_github.log && (echo "Found Traceback" && exit 1) || true
 
@@ -62,6 +63,7 @@ jobs:
           fi
 
           grep -q "[Pylint]" python_github.log || (echo "Missing Pylint output" && exit 1)
+          grep -q "[CustomRules]" python_github.log || (echo "Missing CustomRules output" && exit 1)
           grep -q "\.py" python_github.log || echo "No Python files found"
           grep -q "Traceback" python_github.log && (echo "Found Traceback" && exit 1) || true
 
@@ -84,6 +86,7 @@ jobs:
           fi
 
           grep -q "[OCLint]" cpp_forgejo.log || (echo "Missing OCLint output" && exit 1)
+          grep -q "[CustomRules]" cpp_forgejo.log || (echo "Missing CustomRules output" && exit 1)
           grep -q "Traceback" cpp_forgejo.log && (echo "Found Traceback" && exit 1) || true
 
           echo "Forgejo C++ PR passed"
@@ -105,6 +108,7 @@ jobs:
           fi
 
           grep -q "[Pylint]" python_forgejo.log || (echo "Missing Pylint output" && exit 1)
+          grep -q "[CustomRules]" python_forgejo.log || (echo "Missing CustomRules output" && exit 1)
           grep -q "Traceback" python_forgejo.log && (echo "Found Traceback" && exit 1) || true
 
           echo "Forgejo Python PR passed"
