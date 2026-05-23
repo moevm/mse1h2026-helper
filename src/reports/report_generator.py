@@ -8,8 +8,8 @@ from ..logger import warning
 
 TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 
-TOOL_RANK = {'Pylint': 0, 'OCLint': 1, 'CustomRules': 2}
-TOOL_LABELS = {0: 'Pylint', 1: 'OCLint', 2: 'CustomRules'}
+TOOL_RANK = {'Pylint': 0, 'OCLint': 1, 'CustomRules': 2, 'Other': 3}
+TOOL_LABELS = {0: 'Pylint', 1: 'OCLint', 2: 'CustomRules', 3: 'Other'}
 SEVERITY_LABELS = {0: 'INFO', 1: 'REFACTOR', 2: 'CONVENTION', 3: 'WARNING', 4: 'ERROR', 5: 'FATAL'}
 
 
@@ -27,7 +27,7 @@ class PullRequestReportGenerator:
 		self.sort_messages = sort_messages
 
 	def _tool_rank(self, msg: Message) -> int:
-		return TOOL_RANK[msg.linter]
+		return TOOL_RANK.get(msg.linter, TOOL_RANK['Other'])
 
 	def _severity_rank(self, msg: Message) -> int:
 		msg_id = (msg.msg_id or '').strip().upper()
