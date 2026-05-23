@@ -4,6 +4,7 @@ from .base import FileRule, PRRule
 from .commit_size_rule import CommitSizeRule
 from .nested_loops_rule import NestedLoopsRule
 from .goto_rule import GotoRule
+from .require_rule import RequireRule
 
 
 class RuleFactory:
@@ -35,3 +36,14 @@ class RuleFactory:
 	@classmethod
 	def get_all_rules(cls) -> List:
 		return cls._file_rules + cls._pr_rules
+
+	@classmethod
+	def configure_rule(cls, rule_name: str, params: str) -> None:
+		if rule_name == 'require':
+			functions = [f.strip() for f in params.split(',') if f.strip()]
+			if functions:
+				cls._file_rules = [
+					r for r in cls._file_rules
+					if not isinstance(r, RequireRule)
+				]
+				cls._file_rules.append(RequireRule(required_functions=functions))

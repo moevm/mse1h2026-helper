@@ -7,6 +7,7 @@ from datetime import datetime
 from .linters.custom_runner import CustomRulesWrapper
 from .linters import LinterFactory
 from .linters import options as linter_options
+from .linters.custom_rules import RuleFactory
 from .hosting_fetcher import login, get_pull_request
 from .logger import info, warning, error, set_quiet
 from .reports import ReportGenerator
@@ -119,6 +120,7 @@ def main():
 	parser.add_argument('--pr-filter-date-from', help='Фильтр по дате: от (формат: YYYY.MM.DD)', type=parse_date)
 	parser.add_argument('--pr-filter-date-to', help='Фильтр по дате: до (формат: YYYY.MM.DD)', type=parse_date)
 	parser.add_argument('--pr-filter-labels', help='Фильтр по меткам (PR должен иметь все указанные метки)')
+	parser.add_argument('--rule-param', action='append', dest='rule_params', default=[], help='Параметры правил в формате rule_name:param1,param2,...')
 	parser.add_argument('-q', '--quiet', action='store_true', help='Отключить отладочные сообщения')
 	if len(sys.argv) == 1:
 		parser.print_help()
@@ -141,6 +143,11 @@ def main():
 			for opt in shlex.split(args.pylint):
 				if opt:
 					linter_options.pylint_options.append(opt)
+		for rule_param in args.rule_params:
+			if ':' not in rule_param:
+				raise ValueError(f'Неверный формат --rule-param: {rule_param}')
+			rule_name, params = rule_param.split(':', 1)
+			RuleFactory.configure_rule(rule_name, params)
 		pr_urls = collect_pr_urls(args)
 		if not pr_urls:
 			raise ValueError('Не указаны PR для анализа')
