@@ -5,58 +5,64 @@ from typing import List, Any, Set
 
 from pylint.interfaces import UNDEFINED
 
-from .base import FileRule
+from .base import PRRule
 from .ast_cache import ASTCache
 from ...config import PYTHON_EXTENSIONS, CPP_EXTENSIONS
 from ...reports.message import Message, MessageLocation
 
 
-class RequireRule(FileRule):
+class RequireRule(PRRule):
 	def __init__(self, required_functions: list[str]):
 		self.required_functions = required_functions
 		self.ast_cache = ASTCache()
 
 	def check(self, context: dict[str, Any]) -> List[Message]:
-		file_path = context.get('file_path', '')
-		if not file_path:
+		pr = context.get('pr')
+		if not pr or not pr.files:
 			return []
 
-		ext = PurePath(file_path).suffix
-		if ext in CPP_EXTENSIONS:
-			tree = self.ast_cache.parse_file(file_path)
-			if tree is None:
-				return []
+		all_found: Set[str] = set()
 
-			visitor = CppFunctionCallVisitor()
-			visitor.visit(tree.cursor)
+		for file_path in pr.files:
+			ext = PurePath(file_path).suffix
+			if ext in CPP_EXTENSIONS:
+				tree = self.ast_cache.parse_file(file_path)
+				if tree is None:
+					continue
 
-		elif ext in PYTHON_EXTENSIONS:
-			tree = self.ast_cache.parse_file(file_path)
-			if tree is None:
-				return []
+				visitor = CppFunctionCallVisitor()
+				visitor.visit(tree.cursor)
 
-			visitor = PythonFunctionCallVisitor()
-			visitor.visit(tree)
+			elif ext in PYTHON_EXTENSIONS:
+				tree = self.ast_cache.parse_file(file_path)
+				if tree is None:
+					continue
 
-		else:
-			return []
+				visitor = PythonFunctionCallVisitor()
+				visitor.visit(tree)
+
+			else:
+				continue
+
+			all_found.update(visitor.function_calls)
 
 		messages = []
+		pr_label = f'PR #{pr.number}'
 		for func_name in self.required_functions:
-			if func_name not in visitor.function_calls:
+			if func_name not in all_found:
 				msg = self._make_message(
-					file_path=file_path,
+					pr_label=pr_label,
 					func_name=func_name
 				)
 				messages.append(msg)
 
 		return messages
 
-	def _make_message(self, file_path: str, func_name: str) -> Message:
+	def _make_message(self, pr_label: str, func_name: str) -> Message:
 		location = MessageLocation(
-			abspath=file_path,
-			path=file_path,
-			module='',
+			abspath='.',
+			path='.',
+			module=pr_label,
 			obj='',
 			line=1,
 			column=1,
@@ -68,7 +74,7 @@ class RequireRule(FileRule):
 			msg_id='WARNING',
 			symbol='required_function_missing',
 			location=location,
-			msg=f'В файле отсутствует вызов требуемой функции {func_name}',
+			msg=f'В PR не найдены вызовы требуемой функции {func_name}',
 			confidence=UNDEFINED,
 			linter='CustomRules'
 		)
