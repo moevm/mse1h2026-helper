@@ -160,7 +160,7 @@ def main():
 			if skip_reason:
 				info(f'Пропуск PR {pr_url}: {skip_reason}')
 				continue
-			
+
 			results.append((pr, process_pull_request(g, args.token, pr)))
 
 		ReportGenerator().generate(results)
