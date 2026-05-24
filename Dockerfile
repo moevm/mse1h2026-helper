@@ -1,9 +1,12 @@
 FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y \
+	build-essential \
 	python-is-python3 \
 	python3-pip \
-	wget
+	wget \
+	clang-13 \
+	&& ln -sf /usr/bin/clang-13 /usr/bin/clang
 RUN rm -rf /var/lib/apt/lists/*
 
 COPY install_oclint.sh /tmp/install_oclint.sh
