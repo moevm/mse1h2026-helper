@@ -1,4 +1,5 @@
 import re
+from itertools import groupby
 from pathlib import Path
 from typing import List, Optional
 
@@ -7,44 +8,68 @@ from ..logger import warning
 
 TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 
+OPTION_SORT_MESSAGES_CHOICES = ['files', 'severity', 'tools']
+OPTION_SORT_MESSAGES_DEFAULT = 'files'
+
+TOOL_RANK = {'Pylint': 0, 'OCLint': 1, 'CustomRules': 2, 'Other': 3}
+TOOL_LABELS = {0: 'Pylint', 1: 'OCLint', 2: 'CustomRules', 3: 'Other'}
+SEVERITY_LABELS = {0: 'INFO', 1: 'REFACTOR', 2: 'CONVENTION', 3: 'WARNING', 4: 'ERROR', 5: 'FATAL'}
+
 
 class PullRequestReportGenerator:
 	def __init__(
 		self,
 		pr,
 		show_code_snippet: bool = True,
-		snippet_context_lines: int = 2
+		snippet_context_lines: int = 2,
+		sort_messages: str = OPTION_SORT_MESSAGES_DEFAULT,
 	):
 		self.pr = pr
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
+		self.sort_messages = sort_messages or OPTION_SORT_MESSAGES_DEFAULT
+
+	def _tool_rank(self, msg: Message) -> int:
+		return TOOL_RANK.get(msg.linter, TOOL_RANK['Other'])
+
+	def _severity_rank(self, msg: Message) -> int:
+		msg_id = (msg.msg_id or '').strip().upper()
+		return {'I': 0, 'R': 1, 'C': 2, 'W': 3, 'E': 4, 'F': 5}.get(msg_id[:1], 0)
+
+	def _display_path(self, msg: Message) -> str:
+		return self._get_repo_relative_path(msg.abspath).lstrip('/')
 
 	def generate(self, messages: List[Message]) -> str:
 		if not messages:
 			return 'No issues found.\n'
 
-		messages_by_file = self._group_by_file(messages)
+		if self.sort_messages == 'files':
+			sort_key = lambda m: (self._display_path(m).lower(), self._tool_rank(m), self._severity_rank(m))
+			group_fn = self._display_path
+			header_prefix = 'File'
+			label_fn = lambda k: k or '(unknown)'
+		elif self.sort_messages == 'severity':
+			sort_key = lambda m: (self._severity_rank(m), self._display_path(m).lower(), self._tool_rank(m))
+			group_fn = self._severity_rank
+			header_prefix = 'Severity'
+			label_fn = lambda k: SEVERITY_LABELS.get(k, 'UNKNOWN')
+		else:
+			sort_key = lambda m: (self._tool_rank(m), self._display_path(m).lower(), self._severity_rank(m))
+			group_fn = self._tool_rank
+			header_prefix = 'Tool'
+			label_fn = lambda k: TOOL_LABELS[k]
+
+		sorted_messages = sorted(messages, key=sort_key)
 		lines = []
 
-		for file_path, file_messages in messages_by_file.items():
-			display_path = self._get_repo_relative_path(file_path).lstrip('/')
-
-			lines.append(f'\nFile: {display_path}\n')
-
-			for msg in file_messages:
+		for group_key, group_msgs in groupby(sorted_messages, key=group_fn):
+			lines.append(f'\n{header_prefix}: {label_fn(group_key)}\n')
+			for msg in group_msgs:
+				display_path = self._display_path(msg)
 				lines.append(self._format_message(msg, display_path))
 				lines.append('')
 
 		return '\n'.join(lines)
-
-	def _group_by_file(self, messages: List[Message]) -> dict:
-		grouped = {}
-		for msg in messages:
-			key = msg.abspath
-			if key not in grouped:
-				grouped[key] = []
-			grouped[key].append(msg)
-		return grouped
 
 	def _get_repo_relative_path(self, file_path: str) -> str:
 		if not self.pr or not self.pr.files_dir:
@@ -129,9 +154,16 @@ class PullRequestReportGenerator:
 
 
 class ReportGenerator:
-	def __init__(self, show_code_snippet: bool = True, snippet_context_lines: int = 2):
+	def __init__(self,
+		show_code_snippet: bool = True,
+		snippet_context_lines: int = 2,
+		sort_messages: str = OPTION_SORT_MESSAGES_DEFAULT,
+		first_separator: bool = False,
+	):
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
+		self.sort_messages = sort_messages
+		self.first_separator = first_separator
 
 	def generate(self, results: list[tuple]) -> None:
 		groups: dict = {}
@@ -145,7 +177,7 @@ class ReportGenerator:
 		first = True
 		for repo_url in sorted(groups.keys(), key=repo_sort_key):
 			for pr, messages in sorted(groups[repo_url], key=lambda x: x[0].number):
-				if not first:
+				if not first or self.first_separator:
 					print('\n====================================\n')
 				first = False
 
@@ -153,7 +185,7 @@ class ReportGenerator:
 				if pr.author_name:
 					author_display = f'{pr.author_username} ({pr.author_name})'
 				date_str = pr.created_at.strftime('%Y.%m.%d') if pr.created_at else 'N/A'
-				print('\nRepository: ', pr.repo_url)
+				print('Repository: ', pr.repo_url)
 				print('PR: ', pr.pr_url)
 				print('Author: ', author_display)
 				print('Date: ', date_str)
@@ -166,5 +198,6 @@ class ReportGenerator:
 					pr,
 					show_code_snippet=self.show_code_snippet,
 					snippet_context_lines=self.snippet_context_lines,
+					sort_messages=self.sort_messages,
 				)
 				print(pr_generator.generate(messages))
