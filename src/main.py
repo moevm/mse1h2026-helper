@@ -121,7 +121,7 @@ def main():
 	parser.add_argument('--pr-filter-date-to', help='Фильтр по дате: до (формат: YYYY.MM.DD)', type=parse_date)
 	parser.add_argument('--pr-filter-labels', help='Фильтр по меткам (PR должен иметь все указанные метки)')
 	parser.add_argument('--rule-param', action='append', dest='rule_params', default=[], help='Параметры правил в формате rule_name:param1,param2,...')
-	parser.add_argument('--sort-messages', choices=['files', 'severity', 'tools'], default=None, const='files', nargs='?', help='Режим сортировки сообщений: files (по файлам), severity (по серьёзности), tools (по инструментам)')
+	parser.add_argument('--sort-messages', choices=['files', 'severity', 'tools'], default='files', help='Режим сортировки сообщений: files (по файлам), severity (по серьёзности), tools (по инструментам)')
 	parser.add_argument('-q', '--quiet', action='store_true', help='Отключить отладочные сообщения')
 	if len(sys.argv) == 1:
 		parser.print_help()

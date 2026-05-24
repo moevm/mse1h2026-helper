@@ -19,7 +19,7 @@ class PullRequestReportGenerator:
 		pr,
 		show_code_snippet: bool = True,
 		snippet_context_lines: int = 2,
-		sort_messages: str | None = None,
+		sort_messages: str = "files",
 	):
 		self.pr = pr
 		self.show_code_snippet = show_code_snippet
@@ -39,16 +39,8 @@ class PullRequestReportGenerator:
 	def generate(self, messages: List[Message]) -> str:
 		if not messages:
 			return 'No issues found.\n'
-
-		if self.sort_messages is None:
-			lines = []
-			for msg in messages:
-				lines.append(self._format_message(msg, self._display_path(msg)))
-				lines.append('')
-			return '\n'.join(lines)
-
+		
 		mode = self.sort_messages
-
 		if mode == 'files':
 			sort_key = lambda m: (self._display_path(m).lower(), self._tool_rank(m), self._severity_rank(m))
 			group_fn = self._display_path
@@ -160,7 +152,7 @@ class PullRequestReportGenerator:
 
 
 class ReportGenerator:
-	def __init__(self, show_code_snippet: bool = True, snippet_context_lines: int = 2, sort_messages: str | None = None):
+	def __init__(self, show_code_snippet: bool = True, snippet_context_lines: int = 2, sort_messages: str = "files"):
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
 		self.sort_messages = sort_messages
