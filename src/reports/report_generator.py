@@ -154,10 +154,16 @@ class PullRequestReportGenerator:
 
 
 class ReportGenerator:
-	def __init__(self, show_code_snippet: bool = True, snippet_context_lines: int = 2, sort_messages: str = OPTION_SORT_MESSAGES_DEFAULT):
+	def __init__(self,
+		show_code_snippet: bool = True,
+		snippet_context_lines: int = 2,
+		sort_messages: str = OPTION_SORT_MESSAGES_DEFAULT,
+		first_separator: bool = False,
+	):
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
 		self.sort_messages = sort_messages
+		self.first_separator = first_separator
 
 	def generate(self, results: list[tuple]) -> None:
 		groups: dict = {}
@@ -171,7 +177,7 @@ class ReportGenerator:
 		first = True
 		for repo_url in sorted(groups.keys(), key=repo_sort_key):
 			for pr, messages in sorted(groups[repo_url], key=lambda x: x[0].number):
-				if not first:
+				if not first or self.first_separator:
 					print('\n====================================\n')
 				first = False
 
@@ -179,7 +185,7 @@ class ReportGenerator:
 				if pr.author_name:
 					author_display = f'{pr.author_username} ({pr.author_name})'
 				date_str = pr.created_at.strftime('%Y.%m.%d') if pr.created_at else 'N/A'
-				print('\nRepository: ', pr.repo_url)
+				print('Repository: ', pr.repo_url)
 				print('PR: ', pr.pr_url)
 				print('Author: ', author_display)
 				print('Date: ', date_str)

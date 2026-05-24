@@ -164,7 +164,7 @@ def main():
 
 			results.append((pr, process_pull_request(g, args.token, pr)))
 
-		ReportGenerator(sort_messages=args.sort_messages).generate(results)
+		ReportGenerator(sort_messages=args.sort_messages, first_separator=not args.quiet).generate(results)
 
 	except Exception as e:
 		error(str(e))
