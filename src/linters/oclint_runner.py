@@ -16,6 +16,11 @@ CPP_EXTENSIONS = {'.cpp', '.cc', '.cxx', '.c++', '.C', '.CPP'}
 
 
 class OCLintWrapper(Linter):
+	"""
+	Performs analysis with OCLint.
+	Fallbacks to analysis with Clang if OCLint crashes.
+	"""
+
 	@staticmethod
 	def _detect_standard(file_path: str) -> Tuple[List[str], List[str]]:
 		_ext = Path(file_path).suffix.lower()
@@ -87,12 +92,12 @@ class OCLintWrapper(Linter):
 			r'^(.+?):(\d+):(?:\d+)?:\s*(error|fatal error|warning):\s*(.+?)(?:\s*\[-W|\s*$)',
 			re.IGNORECASE | re.MULTILINE
 		)
-		
+
 		for match in pattern.finditer(output):
 			_, line_no, level, msg = match.groups()
 			if level.lower() == 'warning':
 				continue
-				
+
 			messages.append(self._create_message(
 				file_path=str(source_file),
 				line=int(line_no),
@@ -130,7 +135,7 @@ class OCLintWrapper(Linter):
 			'clang', '-fsyntax-only', '-Wall', '-Wextra', '-ferror-limit=10',
 			*standards, *lang_flags, str(source_file),
 		]
-		
+
 		try:
 			clang_res = subprocess.run(clang_cmd, capture_output=True, text=True, timeout=30)
 		except Exception:
