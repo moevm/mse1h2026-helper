@@ -4,6 +4,7 @@ from .commit_size_rule import CommitSizeRule
 from .factory import RuleFactory
 from .nested_loops_rule import NestedLoopsRule
 from .goto_rule import GotoRule
+from .require_rule import RequireRule
 
 __all__ = [
 	'CustomRule',
@@ -14,4 +15,5 @@ __all__ = [
 	'CommitSizeRule',
 	'NestedLoopsRule',
 	'GotoRule',
+	'RequireRule',
 ]

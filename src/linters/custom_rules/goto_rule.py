@@ -63,15 +63,15 @@ class GotoRule(FileRule):
 		return message
 
 class GotoVisitor:
-    def __init__(self):
-        self.goto_locations: List[dict] = []
-    
-    def visit(self, cursor):
-        if cursor.kind == clang.cindex.CursorKind.GOTO_STMT:
-            self.goto_locations.append({
-                'line': cursor.location.line,
-                'column': cursor.location.column,
-            })
-        
-        for child in cursor.get_children():
-            self.visit(child)
+	def __init__(self):
+		self.goto_locations: List[dict] = []
+
+	def visit(self, cursor):
+		if cursor.kind == clang.cindex.CursorKind.GOTO_STMT:
+			self.goto_locations.append({
+				'line': cursor.location.line,
+				'column': cursor.location.column,
+			})
+
+		for child in cursor.get_children():
+			self.visit(child)
