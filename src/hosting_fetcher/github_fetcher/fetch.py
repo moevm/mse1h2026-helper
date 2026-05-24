@@ -30,9 +30,8 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 	pr = repo.get_pull(pr_number)
 	labels = [label.name for label in pr.get_labels()]
 	commits = [commit.sha for commit in pr.get_commits()]
-	user_id = safe_str(
-		getattr(pr.user, 'name', None) or getattr(pr.user, 'login', None)
-	)
+	user_login = safe_str(getattr(pr.user, 'login', None))
+	user_name = safe_str(getattr(pr.user, 'name', None))
 	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
 	pr_obj = PullRequest(
 		body=safe_str(pr.body),
@@ -54,7 +53,8 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 		hosting='github',
 		org_id=owner,
 		repo_id=repo_name,
-		user_id=user_id,
+		author_username=user_login,
+		author_name=user_name,
 		files_dir=tmpdir,
 		files=[],
 	)
