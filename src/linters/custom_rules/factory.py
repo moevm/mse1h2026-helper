@@ -42,8 +42,5 @@ class RuleFactory:
 		if rule_name == 'require':
 			functions = [f.strip() for f in params.split(',') if f.strip()]
 			if functions:
-				cls._pr_rules = [
-					r for r in cls._pr_rules
-					if not isinstance(r, RequireRule)
-				]
+				cls._pr_rules = [r for r in cls._pr_rules if not isinstance(r, RequireRule)]
 				cls._pr_rules.append(RequireRule(required_functions=functions))
