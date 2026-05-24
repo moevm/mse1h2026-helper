@@ -1,6 +1,7 @@
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path, PurePath
 from typing import List, Optional, Tuple
 
@@ -12,6 +13,10 @@ from ..reports.message import Message, MessageLocation
 
 C_STANDARD = '-std=c17'
 CPP_STANDARD = '-std=c++17'
+CLANG_ERROR_PATTERN = re.compile(
+    r'^(.+?):(\d+):(?:\d+)?:\s*(error|fatal error|warning):\s*(.+?)(?:\s*\[-W|\s*$)',
+    re.IGNORECASE | re.MULTILINE
+)
 
 
 class OCLintWrapper(Linter):
@@ -87,12 +92,8 @@ class OCLintWrapper(Linter):
 
 	def _parse_clang_output(self, source_file: Path, output: str) -> List[Message]:
 		messages = []
-		pattern = re.compile(
-			r'^(.+?):(\d+):(?:\d+)?:\s*(error|fatal error|warning):\s*(.+?)(?:\s*\[-W|\s*$)',
-			re.IGNORECASE | re.MULTILINE
-		)
-
-		for match in pattern.finditer(output):
+		
+		for match in CLANG_ERROR_PATTERN.finditer(output):
 			_, line_no, level, msg = match.groups()
 			if level.lower() == 'warning':
 				continue
@@ -129,6 +130,12 @@ class OCLintWrapper(Linter):
 					return self._parse_oclint_violations(data, file_path)
 			except json.JSONDecodeError:
 				pass
+
+		print(
+            f"OCLint analysis failed for '{source_file.name}'. "
+            f"Falling back to Clang for syntax check.",
+            file=sys.stderr
+        )
 
 		clang_cmd = [
 			'clang', '-fsyntax-only', '-Wall', '-Wextra', '-ferror-limit=10',
