@@ -8,6 +8,9 @@ from ..logger import warning
 
 TMP_PREFIX = re.compile(r'^/tmp/tmp[^/]+/')
 
+OPTION_SORT_MESSAGES_CHOICES = ['files', 'severity', 'tools']
+OPTION_SORT_MESSAGES_DEFAULT = 'files'
+
 TOOL_RANK = {'Pylint': 0, 'OCLint': 1, 'CustomRules': 2, 'Other': 3}
 TOOL_LABELS = {0: 'Pylint', 1: 'OCLint', 2: 'CustomRules', 3: 'Other'}
 SEVERITY_LABELS = {0: 'INFO', 1: 'REFACTOR', 2: 'CONVENTION', 3: 'WARNING', 4: 'ERROR', 5: 'FATAL'}
@@ -19,12 +22,12 @@ class PullRequestReportGenerator:
 		pr,
 		show_code_snippet: bool = True,
 		snippet_context_lines: int = 2,
-		sort_messages: str = "files",
+		sort_messages: str = OPTION_SORT_MESSAGES_DEFAULT,
 	):
 		self.pr = pr
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
-		self.sort_messages = sort_messages
+		self.sort_messages = sort_messages or OPTION_SORT_MESSAGES_DEFAULT
 
 	def _tool_rank(self, msg: Message) -> int:
 		return TOOL_RANK.get(msg.linter, TOOL_RANK['Other'])
@@ -39,14 +42,13 @@ class PullRequestReportGenerator:
 	def generate(self, messages: List[Message]) -> str:
 		if not messages:
 			return 'No issues found.\n'
-		
-		mode = self.sort_messages
-		if mode == 'files':
+
+		if self.sort_messages == 'files':
 			sort_key = lambda m: (self._display_path(m).lower(), self._tool_rank(m), self._severity_rank(m))
 			group_fn = self._display_path
 			header_prefix = 'File'
 			label_fn = lambda k: k or '(unknown)'
-		elif mode == 'severity':
+		elif self.sort_messages == 'severity':
 			sort_key = lambda m: (self._severity_rank(m), self._display_path(m).lower(), self._tool_rank(m))
 			group_fn = self._severity_rank
 			header_prefix = 'Severity'
@@ -152,7 +154,7 @@ class PullRequestReportGenerator:
 
 
 class ReportGenerator:
-	def __init__(self, show_code_snippet: bool = True, snippet_context_lines: int = 2, sort_messages: str = "files"):
+	def __init__(self, show_code_snippet: bool = True, snippet_context_lines: int = 2, sort_messages: str = OPTION_SORT_MESSAGES_DEFAULT):
 		self.show_code_snippet = show_code_snippet
 		self.snippet_context_lines = snippet_context_lines
 		self.sort_messages = sort_messages

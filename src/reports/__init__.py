@@ -1,2 +1,2 @@
-from .report_generator import ReportGenerator, PullRequestReportGenerator
+from .report_generator import OPTION_SORT_MESSAGES_CHOICES, OPTION_SORT_MESSAGES_DEFAULT, ReportGenerator, PullRequestReportGenerator
 from .message import Message, MessageLocation
