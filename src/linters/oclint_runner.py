@@ -6,13 +6,12 @@ from typing import List, Optional, Tuple
 
 from pylint.interfaces import UNDEFINED
 
+from ..config import C_EXTENSIONS, CPP_EXTENSIONS
 from .base import Linter
 from ..reports.message import Message, MessageLocation
 
 C_STANDARD = '-std=c17'
 CPP_STANDARD = '-std=c++17'
-C_EXTENSIONS = {'.c'}
-CPP_EXTENSIONS = {'.cpp', '.cc', '.cxx', '.c++', '.C', '.CPP'}
 
 
 class OCLintWrapper(Linter):
