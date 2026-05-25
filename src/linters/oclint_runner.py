@@ -14,8 +14,8 @@ from ..reports.message import Message, MessageLocation
 C_STANDARD = '-std=c17'
 CPP_STANDARD = '-std=c++17'
 CLANG_ERROR_PATTERN = re.compile(
-    r'^(.+?):(\d+):(?:\d+)?:\s*(error|fatal error|warning):\s*(.+?)(?:\s*\[-W|\s*$)',
-    re.IGNORECASE | re.MULTILINE
+	r'^(.+?):(\d+):(?:\d+)?:\s*(error|fatal error|warning):\s*(.+?)(?:\s*\[-W|\s*$)',
+	re.IGNORECASE | re.MULTILINE
 )
 
 
@@ -92,7 +92,7 @@ class OCLintWrapper(Linter):
 
 	def _parse_clang_output(self, source_file: Path, output: str) -> List[Message]:
 		messages = []
-		
+
 		for match in CLANG_ERROR_PATTERN.finditer(output):
 			_, line_no, level, msg = match.groups()
 			if level.lower() == 'warning':
@@ -132,10 +132,10 @@ class OCLintWrapper(Linter):
 				pass
 
 		print(
-            f"OCLint analysis failed for '{source_file.name}'. "
-            f"Falling back to Clang for syntax check.",
-            file=sys.stderr
-        )
+			f"OCLint analysis failed for '{source_file.name}'. "
+			f"Falling back to Clang for syntax check.",
+			file=sys.stderr
+		)
 
 		clang_cmd = [
 			'clang', '-fsyntax-only', '-Wall', '-Wextra', '-ferror-limit=10',
