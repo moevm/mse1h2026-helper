@@ -7,7 +7,7 @@ from pylint.interfaces import UNDEFINED
 
 from .base import PRRule
 from .ast_cache import ASTCache
-from ...config import PYTHON_EXTENSIONS, CPP_EXTENSIONS
+from ...config import PYTHON_EXTENSIONS, C_CPP_EXTENSIONS
 from ...reports.message import Message, MessageLocation
 
 
@@ -25,7 +25,7 @@ class RequireRule(PRRule):
 
 		for file_path in pr.files:
 			ext = PurePath(file_path).suffix
-			if ext in CPP_EXTENSIONS:
+			if ext in C_CPP_EXTENSIONS:
 				tree = self.ast_cache.parse_file(file_path)
 				if tree is None:
 					continue

@@ -4,7 +4,7 @@ from typing import Optional, TypeAlias
 
 import clang.cindex
 
-from ...config import PYTHON_EXTENSIONS, CPP_EXTENSIONS
+from ...config import PYTHON_EXTENSIONS, C_CPP_EXTENSIONS
 
 AST: TypeAlias = ast.AST | clang.cindex.TranslationUnit
 
@@ -37,7 +37,7 @@ class ASTCache:
 					content = f.read()
 				tree = ast.parse(content, filename=file_path)
 
-			elif ext in CPP_EXTENSIONS:
+			elif ext in C_CPP_EXTENSIONS:
 				index = clang.cindex.Index.create()
 				tree = index.parse(file_path)
 

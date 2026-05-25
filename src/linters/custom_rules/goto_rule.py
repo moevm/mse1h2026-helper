@@ -6,7 +6,7 @@ from pylint.interfaces import UNDEFINED
 
 from .base import FileRule
 from .ast_cache import ASTCache
-from ...config import CPP_EXTENSIONS
+from ...config import C_CPP_EXTENSIONS
 from ...reports.message import Message, MessageLocation
 
 
@@ -19,7 +19,7 @@ class GotoRule(FileRule):
 		if not file_path:
 			return []
 
-		if PurePath(file_path).suffix not in CPP_EXTENSIONS:
+		if PurePath(file_path).suffix not in C_CPP_EXTENSIONS:
 			return []
 
 		tree = self.ast_cache.parse_file(file_path)
