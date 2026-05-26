@@ -6,8 +6,11 @@ RUN apt-get update && apt-get install -y \
 	python-is-python3 \
 	python3-pip \
 	wget \
-	clang-15
-RUN rm -rf /var/lib/apt/lists/*
+	clang-15 \
+	apt-file && \
+	ln -sf /usr/bin/clang-15 /usr/bin/clang && \
+	ln -sf /usr/bin/clang++-15 /usr/bin/clang++ && \
+	apt-file update
 
 COPY install_oclint.sh /tmp/install_oclint.sh
 RUN chmod +x /tmp/install_oclint.sh && /tmp/install_oclint.sh
