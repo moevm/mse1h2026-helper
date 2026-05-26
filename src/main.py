@@ -155,7 +155,7 @@ def main():
 		results = []
 		for pr_url in pr_urls:
 			g = login(args.token, pr_url)
-			pr = get_pull_request(g, pr_url)
+			pr = get_pull_request(g, pr_url, args.token)
 
 			skip_reason = check_pr_against_filters(pr, args)
 			if skip_reason:

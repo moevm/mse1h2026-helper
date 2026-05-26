@@ -1,11 +1,13 @@
 import os
+import subprocess
 import tempfile
 import atexit
 import shutil
-from github import Github, GithubException
+from typing import Optional
+from github import Github
 
 from ...config import SUPPORTED_EXTENSIONS
-from ...logger import info, warning
+from ...logger import info
 from ..pull_request import PullRequest
 from ..utils import safe_str
 
@@ -15,7 +17,7 @@ def _cleanup_dir(path: str) -> None:
 		shutil.rmtree(path, ignore_errors=True)
 
 
-def get_pull_request(client: Github, pr_url: str) -> PullRequest:
+def get_pull_request(client: Github, pr_url: str, token: Optional[str] = None) -> PullRequest:
 	tmpdir = tempfile.mkdtemp(prefix=f'pr_{hash(pr_url)}_')
 	atexit.register(_cleanup_dir, tmpdir)
 	path = pr_url.replace('https://github.com', '').strip('/')
@@ -33,6 +35,30 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 	user_login = safe_str(getattr(pr.user, 'login', None))
 	user_name = safe_str(getattr(pr.user, 'name', None))
 	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
+
+	head_repo = pr.head.repo
+	if head_repo:
+		clone_url = head_repo.clone_url
+	else:
+		clone_url = repo.clone_url
+	branch = pr.head.ref
+
+	if token:
+		clone_url = clone_url.replace('https://', f'https://oauth2:{token}@')
+
+	if not shutil.which('git'):
+		_cleanup_dir(tmpdir)
+		raise RuntimeError('git не найден. Установите git.')
+
+	info(f'Клонирование ветки {branch} ({clone_url})...')
+	result = subprocess.run(
+		['git', 'clone', '--single-branch', '--branch', branch, '--depth', '1', clone_url, tmpdir],
+		capture_output=True, text=True, timeout=120
+	)
+	if result.returncode != 0:
+		_cleanup_dir(tmpdir)
+		raise RuntimeError(f'Не удалось клонировать репозиторий: {result.stderr.strip()}')
+
 	pr_obj = PullRequest(
 		body=safe_str(pr.body),
 		changed_files=pr.changed_files or 0,
@@ -64,19 +90,9 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 			continue
 		if not any(file.filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
 			continue
-		try:
-			content_file = repo.get_contents(file.filename, ref=pr.head.sha)
-			if isinstance(content_file, list):
-				continue
-			content = content_file.decoded_content
-			local_path = os.path.join(tmpdir, file.filename)
-			os.makedirs(os.path.dirname(local_path), exist_ok=True)
-			with open(local_path, 'wb') as f:
-				f.write(content)
+		local_path = os.path.join(tmpdir, file.filename)
+		if os.path.exists(local_path):
 			pr_obj.files.append(local_path)
-		except GithubException as e:
-			warning(f'Не удалось скачать {file.filename}: {e}')
-			continue
 
 	if pr_obj.files:
 		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')

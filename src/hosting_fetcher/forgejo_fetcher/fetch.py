@@ -1,14 +1,15 @@
 import os
+import subprocess
 import tempfile
 import atexit
 import shutil
+from typing import Optional
 from urllib.parse import urlparse
 
 from ...config import SUPPORTED_EXTENSIONS
-from ...logger import info, warning
+from ...logger import info
 from ..pull_request import PullRequest
-from ..utils import safe_str
-from ..utils import parse_datetime
+from ..utils import safe_str, parse_datetime
 
 
 def _cleanup_dir(path: str) -> None:
@@ -37,7 +38,7 @@ def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
 	return owner, repo_name, pr_number
 
 
-def get_pull_request(client, pr_url: str) -> PullRequest:
+def get_pull_request(client, pr_url: str, token: Optional[str] = None) -> PullRequest:
 	tmpdir = tempfile.mkdtemp(prefix=f'pr_{hash(pr_url)}_')
 	atexit.register(_cleanup_dir, tmpdir)
 	owner, repo_name, pr_number = parse_pr_url(pr_url)
@@ -63,6 +64,27 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 	user = pr_data.get('user', {}) or {}
 	user_login = safe_str(user.get('login_name') or user.get('login') or user.get('username'))
 	user_name = safe_str(user.get('full_name') or user.get('name'))
+
+	branch = pr_data['head'].get('ref', '')
+	parsed = urlparse(client.base_url)
+	if token:
+		clone_url = f'{parsed.scheme}://oauth2:{token}@{parsed.netloc}/{owner}/{repo_name}.git'
+	else:
+		clone_url = f'{client.base_url}/{owner}/{repo_name}.git'
+
+	if not shutil.which('git'):
+		_cleanup_dir(tmpdir)
+		raise RuntimeError('git не найден. Установите git.')
+
+	info(f'Клонирование ветки {branch}...')
+	result = subprocess.run(
+		['git', 'clone', '--single-branch', '--branch', branch, '--depth', '1', clone_url, tmpdir],
+		capture_output=True, text=True, timeout=120
+	)
+	if result.returncode != 0:
+		_cleanup_dir(tmpdir)
+		raise RuntimeError(f'Не удалось клонировать репозиторий: {result.stderr.strip()}')
+
 	pr_obj = PullRequest(
 		body=safe_str(pr_data.get('body')),
 		changed_files=changed_files,
@@ -91,24 +113,13 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 
 	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
 
-	head_sha = pr_data['head'].get('sha')
 	for file_info in files:
 		filename = file_info['filename']
 		if not any(filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
 			continue
-		try:
-			raw_url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/raw/{filename}'
-			params = {'ref': head_sha} if head_sha else {}
-			file_response = client.get(raw_url, params=params)
-			if file_response.status_code == 200:
-				local_path = os.path.join(tmpdir, filename)
-				os.makedirs(os.path.dirname(local_path), exist_ok=True)
-				with open(local_path, 'wb') as f:
-					f.write(file_response.content)
-				pr_obj.files.append(local_path)
-		except Exception as e:
-			warning(f'Не удалось скачать {filename}: {e}')
-			continue
+		local_path = os.path.join(tmpdir, filename)
+		if os.path.exists(local_path):
+			pr_obj.files.append(local_path)
 
 	if pr_obj.files:
 		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
