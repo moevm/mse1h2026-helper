@@ -56,14 +56,14 @@ def shallow_clone_or_fetch(repo_dir: Path, auth_url: str, branch: str):
 	else:
 		info(f'Клонирование репозитория (ветка {branch}) в {repo_dir.name}')
 		subprocess.run(
-			['git', 'clone', '--depth', '1', '--branch', branch, auth_url, str(repo_dir)],
+			['git', 'clone', '--depth', '1', '--no-single-branch', '--branch', branch, auth_url, str(repo_dir)],
 			check=True, capture_output=True
 		)
 
 
 def switch_branch(repo_dir: Path, branch: str):
 	subprocess.run(
-		['git', '-C', str(repo_dir), 'switch', branch],
+		['git', '-C', str(repo_dir), 'checkout', '-B', branch, f'origin/{branch}'],
 		check=True, capture_output=True
 	)
 

@@ -9,10 +9,28 @@ from pylint.interfaces import UNDEFINED
 
 from ..config import C_EXTENSIONS, CPP_EXTENSIONS
 from .base import Linter
+from . import options
 from ..reports.message import Message, MessageLocation
 
-C_STANDARD = '-std=c17'
-CPP_STANDARD = '-std=c++17'
+C_STANDARD = '-std=gnu17'
+CPP_STANDARD = '-std=gnu++17'
+
+_pkgconfig_include_paths: list[str] = []
+try:
+	_pc_list = subprocess.run(['pkg-config', '--list-all'], capture_output=True, text=True, timeout=10)
+	if _pc_list.returncode == 0:
+		_pkgs = [l.split()[0] for l in _pc_list.stdout.strip().splitlines() if l.strip()]
+		if _pkgs:
+			_pc_cflags = subprocess.run(['pkg-config', '--cflags'] + _pkgs, capture_output=True, text=True, timeout=30)
+			if _pc_cflags.returncode == 0:
+				for flag in _pc_cflags.stdout.strip().split():
+					if flag.startswith('-I'):
+						path = flag[2:]
+						if path not in _pkgconfig_include_paths:
+							_pkgconfig_include_paths.append(path)
+except Exception:
+	pass
+
 CLANG_ERROR_PATTERN = re.compile(
 	r'^(.+?):(\d+):(?:\d+)?:\s*(error|fatal error|warning):\s*(.+?)(?:\s*\[-W|\s*$)',
 	re.IGNORECASE | re.MULTILINE
@@ -112,10 +130,15 @@ class OCLintWrapper(Linter):
 	def run(self, file_path: str) -> List[Message]:
 		source_file = Path(file_path).resolve()
 		standards, lang_flags = self._detect_standard(file_path)
+		include_flags = [f'-I{path}' for path in _pkgconfig_include_paths]
+		for path in options.oclint_include:
+			if not Path(path).is_absolute() and options.repo_dir:
+				path = str(Path(options.repo_dir) / path)
+			include_flags.append(f'-I{path}')
 
 		oclint_cmd = [
 			'oclint', '-report-type', 'json', str(source_file), '--',
-			*lang_flags, *standards, '-Wall', '-Wextra',
+			*lang_flags, *standards, *include_flags, '-Wall', '-Wextra',
 		]
 
 		try:
@@ -131,21 +154,19 @@ class OCLintWrapper(Linter):
 			except json.JSONDecodeError:
 				pass
 
-		print(
-			f"OCLint analysis failed for '{source_file.name}'. "
-			f"Falling back to Clang for syntax check.",
-			file=sys.stderr
-		)
-
-		clang_cmd = [
-			'clang', '-fsyntax-only', '-Wall', '-Wextra', '-ferror-limit=10',
-			*standards, *lang_flags, str(source_file),
-		]
-
-		try:
-			clang_res = subprocess.run(clang_cmd, capture_output=True, text=True, timeout=30)
-		except Exception:
-			return []
-
-		all_output = clang_res.stderr + '\n' + clang_res.stdout
-		return self._parse_clang_output(source_file, all_output)
+		if result and result.returncode != 0:
+			for cc in ('clang-15', 'clang-14', 'clang'):
+				try:
+					diag = subprocess.run(
+						[cc, '-fsyntax-only', *lang_flags, *standards, *include_flags, str(source_file)],
+						capture_output=True, text=True, timeout=30
+					)
+					if diag.returncode != 0:
+						output = (diag.stderr or diag.stdout or '').strip()
+						short = output.split('\n')[0] if output else ''
+						if short:
+							print(f"  skip {source_file.name}: {short}", file=sys.stderr)
+						break
+				except FileNotFoundError:
+					continue
+		return []

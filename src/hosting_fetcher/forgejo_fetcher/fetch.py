@@ -29,7 +29,7 @@ def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
 
 
 def get_pull_request(client, pr_url: str, token: str | None = None) -> PullRequest:
-	from ..fetch import get_repo_dir, git_auth_url, shallow_clone_or_fetch
+	from ..fetch import get_repo_dir, git_auth_url, shallow_clone_or_fetch, switch_branch
 
 	owner, repo_name, pr_number = parse_pr_url(pr_url)
 	url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}'
@@ -42,6 +42,7 @@ def get_pull_request(client, pr_url: str, token: str | None = None) -> PullReque
 	repo_dir = get_repo_dir('forgejo', owner, repo_name)
 	auth_url = git_auth_url(pr_url, token)
 	shallow_clone_or_fetch(repo_dir, auth_url, branch_name)
+	switch_branch(repo_dir, branch_name)
 
 	commits_url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}/commits'
 	commits_response = client.get(commits_url)

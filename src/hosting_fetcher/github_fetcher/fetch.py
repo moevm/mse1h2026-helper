@@ -5,7 +5,7 @@ from ..utils import safe_str
 
 
 def get_pull_request(client, pr_url: str, token: str | None = None) -> PullRequest:
-	from ..fetch import get_repo_dir, git_auth_url, shallow_clone_or_fetch
+	from ..fetch import get_repo_dir, git_auth_url, shallow_clone_or_fetch, switch_branch
 
 	path = pr_url.replace('https://github.com', '').strip('/')
 	parts = path.split('/')
@@ -22,6 +22,7 @@ def get_pull_request(client, pr_url: str, token: str | None = None) -> PullReque
 	repo_dir = get_repo_dir('github', owner, repo_name)
 	auth_url = git_auth_url(pr_url, token)
 	shallow_clone_or_fetch(repo_dir, auth_url, branch_name)
+	switch_branch(repo_dir, branch_name)
 
 	labels = [label.name for label in pr.get_labels()]
 	commits = [commit.sha for commit in pr.get_commits()]

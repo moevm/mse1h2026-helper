@@ -1,6 +1,7 @@
 import argparse
 import re
 import shlex
+import subprocess
 import sys
 from datetime import datetime
 
@@ -8,7 +9,7 @@ from .linters.custom_runner import CustomRulesWrapper
 from .linters import LinterFactory
 from .linters import options as linter_options
 from .linters.custom_rules import RuleFactory
-from .hosting_fetcher import login, get_pull_request, switch_branch
+from .hosting_fetcher import login, get_pull_request
 from .logger import info, warning, error, set_quiet
 from .reports import ReportGenerator, OPTION_SORT_MESSAGES_CHOICES, OPTION_SORT_MESSAGES_DEFAULT
 
@@ -77,7 +78,7 @@ def process_pull_request(g, token, pr) -> list | None:
 	if not pr.files:
 		return None
 
-	switch_branch(pr.repo_dir, pr.branch_name)
+	linter_options.repo_dir = str(pr.repo_dir)
 
 	all_messages = []
 
@@ -114,6 +115,8 @@ def main():
 	parser.add_argument('--severity', choices=['error', 'warning', 'note'], help='Минимальная серьёзность проблемы для вывода')
 	parser.add_argument('--pylint', help='Параметры для линтера Pylint')
 	parser.add_argument('--oclint', help='Параметры для линтера OCLint')
+	parser.add_argument('--oclint-include', action='append', dest='oclint_include', default=[], help='Путь для поиска include файлов (можно указать несколько раз)')
+	parser.add_argument('--install-packages', action='append', dest='install_packages', default=[], help='Установка системных пакетов (apt-get install) перед анализом')
 	parser.add_argument('--repo', help='URL репозитория для анализа PR по номерам')
 	parser.add_argument('--pr-range', help='Диапазон номеров PR (например, 1-6)')
 	parser.add_argument('--pr-include', help='Список номеров PR для включения (например, 6,42)')
@@ -146,6 +149,18 @@ def main():
 			for opt in shlex.split(args.pylint):
 				if opt:
 					linter_options.pylint_options.append(opt)
+		if args.oclint_include:
+			linter_options.oclint_include = args.oclint_include
+		if args.install_packages:
+			info(f'Установка пакетов: {", ".join(args.install_packages)}')
+			subprocess.run(
+				['apt-get', 'update'],
+				check=True, capture_output=True
+			)
+			subprocess.run(
+				['apt-get', 'install', '-y', *args.install_packages],
+				check=True, capture_output=True
+			)
 		for rule_param in args.rule_params:
 			if ':' not in rule_param:
 				raise ValueError(f'Неверный формат --rule-param: {rule_param}')
