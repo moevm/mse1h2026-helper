@@ -1,3 +1,4 @@
+pyelftools==0.32
 pylint==4.0.5
 PyGithub==2.8.1
 libclang==18.1.1
