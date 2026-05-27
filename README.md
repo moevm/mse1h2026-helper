@@ -127,3 +127,52 @@ DPDK-заголовки также зависят от:
 | Заголовок | Пакет | Назначение |
 |-----------|-------|------------|
 | `<sqlite3.h>` | libsqlite3-dev | SQLite — работа с базами данных |
+
+---
+
+## Воспроизводимая сборка
+
+Все пакеты в Dockerfile зафиксированы до конкретных версий:
+
+### Системные пакеты (APT)
+
+| Пакет | Версия | Репозиторий |
+|-------|--------|-------------|
+| `software-properties-common` | `0.99.22.9` | jammy-updates |
+| `curl` | `7.81.0-1ubuntu1.24` | jammy-security |
+| `python3.12` | `3.12.13-1+jammy1` | deadsnakes PPA |
+| `python3.12-venv` | `3.12.13-1+jammy1` | deadsnakes PPA |
+| `git` | `1:2.34.1-1ubuntu1.17` | jammy-security |
+| `clang-15` | `1:15.0.7-0ubuntu0.22.04.3` | jammy-security |
+| `build-essential` | `12.9ubuntu3` | jammy |
+| `cmake` | `3.22.1-1ubuntu1.22.04.2` | jammy-updates |
+| `meson` | `0.61.2-1` | jammy |
+| `ninja-build` | `1.10.1-1` | jammy |
+| `libssl-dev` | `3.0.2-0ubuntu1.23` | jammy-security |
+| `libnuma-dev` | `2.0.14-3ubuntu2` | jammy |
+| `pkg-config` | `0.29.2-1ubuntu3` | jammy |
+| `libcurl4-openssl-dev` | `7.81.0-1ubuntu1.24` | jammy-security |
+| `libbpf-dev` | `1:0.5.0-1ubuntu22.04.1` | jammy-security |
+| `m4` | `1.4.18-5ubuntu2` | jammy |
+| `libpcap-dev` | `1.10.1-4build1` | jammy |
+| `libsqlite3-dev` | `3.37.2-2ubuntu0.5` | jammy-security |
+| `protobuf-compiler` | `3.12.4-1ubuntu7.22.04.6` | jammy-security |
+| `libprotobuf-dev` | `3.12.4-1ubuntu7.22.04.6` | jammy-security |
+| `libdpdk-dev` | `21.11.9-0ubuntu0.22.04.2` | jammy-security |
+
+### Инструменты сборки Python
+
+| Пакет | Версия |
+|-------|--------|
+| `pip` | `26.1.1` |
+| `setuptools` | `82.0.1` |
+| `wheel` | `0.47.0` |
+
+### Python-зависимости (requirements.txt)
+
+| Пакет | Версия |
+|-------|--------|
+| `pyelftools` | `0.32` |
+| `pylint` | `4.0.5` |
+| `PyGithub` | `2.8.1` |
+| `libclang` | `18.1.1` |
