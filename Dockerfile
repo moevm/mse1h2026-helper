@@ -1,9 +1,9 @@
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y software-properties-common curl \
+RUN apt update && apt install -y software-properties-common curl \
 	&& add-apt-repository -y ppa:deadsnakes/ppa \
-	&& apt-get install -y \
+	&& apt install -y \
 	python3.12 python3.12-venv \
 	git clang-15 \
 	build-essential cmake meson ninja-build \

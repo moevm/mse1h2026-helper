@@ -116,7 +116,7 @@ def main():
 	parser.add_argument('--pylint', help='Параметры для линтера Pylint')
 	parser.add_argument('--oclint', help='Параметры для линтера OCLint')
 	parser.add_argument('--oclint-include', action='append', dest='oclint_include', default=[], help='Путь для поиска include файлов (можно указать несколько раз)')
-	parser.add_argument('--install-packages', action='append', dest='install_packages', default=[], help='Установка системных пакетов (apt-get install) перед анализом')
+	parser.add_argument('--install-packages', action='append', dest='install_packages', default=[], help='Установка системных пакетов (apt install) перед анализом')
 	parser.add_argument('--repo', help='URL репозитория для анализа PR по номерам')
 	parser.add_argument('--pr-range', help='Диапазон номеров PR (например, 1-6)')
 	parser.add_argument('--pr-include', help='Список номеров PR для включения (например, 6,42)')
@@ -154,11 +154,11 @@ def main():
 		if args.install_packages:
 			info(f'Установка пакетов: {", ".join(args.install_packages)}')
 			subprocess.run(
-				['apt-get', 'update'],
+				['apt', 'update'],
 				check=True, capture_output=True
 			)
 			subprocess.run(
-				['apt-get', 'install', '-y', *args.install_packages],
+				['apt', 'install', '-y', *args.install_packages],
 				check=True, capture_output=True
 			)
 		for rule_param in args.rule_params:
