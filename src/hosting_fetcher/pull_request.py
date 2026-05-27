@@ -29,7 +29,8 @@ class PullRequest:
 	hosting: HostingType
 	org_id: str
 	repo_id: str
-	files_dir: Path
+	repo_dir: Path
+	branch_name: str
 	author_username: str = ''
 	author_name: str = ''
 	files: List[Path] = field(default_factory=list)

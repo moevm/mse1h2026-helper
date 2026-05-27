@@ -15,9 +15,9 @@ class PylintWrapper(Linter):
 		pylinter.MANAGER.clear_cache()
 		reporter = CollectingReporter()
 		try:
-			Run([file_path] + (options.pylint_options or DEFAULT_OPTIONS), reporter=reporter, exit=False)
-		except Exception as e:
-			return f'Pylint API Error: {str(e)}'
+			Run([str(file_path)] + (options.pylint_options or DEFAULT_OPTIONS), reporter=reporter, exit=False)
+		except Exception:
+			return []
 		custom_messages: List[Message] = []
 		for message in reporter.messages:
 			location = MessageLocation(

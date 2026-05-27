@@ -67,3 +67,63 @@ docker run mse1h2026-helper https://github.com/moevm/mse1h2026-helper/pull/16
 ```
 
 Если приложение работает корректно, в консоли появится результат обработки указанного Pull Request.
+
+---
+
+## Предустановленные системные пакеты
+
+### Стандартные C/C++ заголовки
+
+| Заголовок | Пакет | Откуда требуется |
+|-----------|-------|------------------|
+| `<sys/types.h>`, `<stdint.h>` | build-essential | Стандартная библиотека C |
+| `<string.h>`, `<stdlib.h>` | build-essential | Стандартная библиотека C |
+| `<cstdint>`, `<string>`, `<vector>` | build-essential | Стандартная библиотека C++ |
+
+### Сетевые заголовки (DPDK)
+
+| Заголовок | Пакет | Назначение |
+|-----------|-------|------------|
+| `<rte_mbuf.h>` | libdpdk-dev | DPDK — работа с mbuf-пакетами |
+| `<rte_ethdev.h>` | libdpdk-dev | DPDK — управление ethernet-портами |
+| `<rte_ip.h>`, `<rte_udp.h>`, `<rte_tcp.h>` | libdpdk-dev | DPDK — протоколы L3/L4 |
+| `<rte_hash.h>` | libdpdk-dev | DPDK — хеш-таблицы |
+| `<rte_timer.h>` | libdpdk-dev | DPDK — таймеры |
+| `<rte_eal.h>`, `<rte_ring.h>` | libdpdk-dev | DPDK — Environment Abstraction Layer |
+
+DPDK-заголовки также зависят от:
+- `<numa.h>` — libnuma-dev — NUMA-поддержка
+- `<pcap.h>` — libpcap-dev — захват пакетов
+
+### Криптография и работа с сетью
+
+| Заголовок | Пакет | Назначение |
+|-----------|-------|------------|
+| `<openssl/ssl.h>` | libssl-dev | OpenSSL — транспортная защита |
+| `<curl/curl.h>` | libcurl4-openssl-dev | libcurl — HTTP-запросы |
+| `<bpf/libbpf.h>` | libbpf-dev | BPF — Berkeley Packet Filter |
+
+### Protobuf
+
+| Заголовок / Инструмент | Пакет | Назначение |
+|------------------------|-------|------------|
+| `<google/protobuf/...>` | libprotobuf-dev | Protobuf — сериализация данных |
+| `protoc` | protobuf-compiler | Компилятор `.proto` → `.pb.h` |
+
+### Prometheus
+
+Заголовки Prometheus устанавливаются из исходного кода (версия v1.2.4), так как пакет `libprometheus-cpp-dev` отсутствует в репозиториях Ubuntu 22.04. Файлы `*_export.h` генерируются CMake в процессе сборки — в образе они созданы как заглушки с пустым макросом.
+
+| Заголовок | Источник | Назначение |
+|-----------|----------|------------|
+| `<prometheus/gateway.h>` | Собран из исходников v1.2.4 | Prometheus Push Gateway — отправка метрик |
+| `<prometheus/counter.h>`, `<prometheus/gauge.h>` | Собран из исходников v1.2.4 | Prometheus — типы метрик |
+| `<prometheus/detail/core_export.h>` | Создан вручную (CMake-generated stub) | Макрос экспорта для shared library |
+| `<prometheus/detail/push_export.h>` | Создан вручную (CMake-generated stub) | Макрос экспорта для push-компонента |
+| `<prometheus/detail/pull_export.h>` | Создан вручную (CMake-generated stub) | Макрос экспорта для pull-компонента |
+
+### Базы данных
+
+| Заголовок | Пакет | Назначение |
+|-----------|-------|------------|
+| `<sqlite3.h>` | libsqlite3-dev | SQLite — работа с базами данных |

@@ -72,10 +72,10 @@ class PullRequestReportGenerator:
 		return '\n'.join(lines)
 
 	def _get_repo_relative_path(self, file_path: str) -> str:
-		if not self.pr or not self.pr.files_dir:
+		if not self.pr or not self.pr.repo_dir:
 			return Path(file_path).name
 		try:
-			return Path(file_path).relative_to(self.pr.files_dir).as_posix()
+			return Path(file_path).relative_to(self.pr.repo_dir).as_posix()
 		except ValueError:
 			return Path(file_path).name
 
