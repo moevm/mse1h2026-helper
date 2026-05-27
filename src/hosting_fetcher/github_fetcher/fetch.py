@@ -1,33 +1,28 @@
-import os
-import tempfile
-import atexit
-import shutil
-from github import Github, GithubException
-
 from ...config import SUPPORTED_EXTENSIONS
 from ...logger import info, warning
 from ..pull_request import PullRequest
 from ..utils import safe_str
 
 
-def _cleanup_dir(path: str) -> None:
-	if path and os.path.exists(path):
-		shutil.rmtree(path, ignore_errors=True)
+def get_pull_request(client, pr_url: str, token: str | None = None) -> PullRequest:
+	from ..fetch import get_repo_dir, git_auth_url, shallow_clone_or_fetch
 
-
-def get_pull_request(client: Github, pr_url: str) -> PullRequest:
-	tmpdir = tempfile.mkdtemp(prefix=f'pr_{hash(pr_url)}_')
-	atexit.register(_cleanup_dir, tmpdir)
 	path = pr_url.replace('https://github.com', '').strip('/')
 	parts = path.split('/')
 	try:
 		owner, repo_name = parts[0], parts[1]
 		pr_number = int(parts[parts.index('pull') + 1])
 	except (IndexError, ValueError):
-		_cleanup_dir(tmpdir)
 		raise ValueError(f'Невалидная GitHub PR ссылка: {pr_url}')
 	repo = client.get_repo(f'{owner}/{repo_name}')
 	pr = repo.get_pull(pr_number)
+
+	branch_name = pr.head.ref
+
+	repo_dir = get_repo_dir('github', owner, repo_name)
+	auth_url = git_auth_url(pr_url, token)
+	shallow_clone_or_fetch(repo_dir, auth_url, branch_name)
+
 	labels = [label.name for label in pr.get_labels()]
 	commits = [commit.sha for commit in pr.get_commits()]
 	user_login = safe_str(getattr(pr.user, 'login', None))
@@ -55,7 +50,8 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 		repo_id=repo_name,
 		author_username=user_login,
 		author_name=user_name,
-		files_dir=tmpdir,
+		repo_dir=repo_dir,
+		branch_name=branch_name,
 		files=[],
 	)
 
@@ -64,20 +60,12 @@ def get_pull_request(client: Github, pr_url: str) -> PullRequest:
 			continue
 		if not any(file.filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
 			continue
-		try:
-			content_file = repo.get_contents(file.filename, ref=pr.head.sha)
-			if isinstance(content_file, list):
-				continue
-			content = content_file.decoded_content
-			local_path = os.path.join(tmpdir, file.filename)
-			os.makedirs(os.path.dirname(local_path), exist_ok=True)
-			with open(local_path, 'wb') as f:
-				f.write(content)
+		local_path = repo_dir / file.filename
+		if local_path.exists():
 			pr_obj.files.append(local_path)
-		except GithubException as e:
-			warning(f'Не удалось скачать {file.filename}: {e}')
-			continue
+		else:
+			warning(f'Файл {file.filename} не найден в локальном репозитории')
 
 	if pr_obj.files:
-		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
+		info(f'Найдены файлы: {", ".join(str(f.relative_to(repo_dir)) for f in pr_obj.files)}')
 	return pr_obj

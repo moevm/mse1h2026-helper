@@ -1,19 +1,10 @@
-import os
-import tempfile
-import atexit
-import shutil
 from urllib.parse import urlparse
 
 from ...config import SUPPORTED_EXTENSIONS
-from ...logger import info, warning
+from ...logger import info
 from ..pull_request import PullRequest
 from ..utils import safe_str
 from ..utils import parse_datetime
-
-
-def _cleanup_dir(path: str) -> None:
-	if path and os.path.exists(path):
-		shutil.rmtree(path, ignore_errors=True)
 
 
 def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
@@ -37,14 +28,21 @@ def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
 	return owner, repo_name, pr_number
 
 
-def get_pull_request(client, pr_url: str) -> PullRequest:
-	tmpdir = tempfile.mkdtemp(prefix=f'pr_{hash(pr_url)}_')
-	atexit.register(_cleanup_dir, tmpdir)
+def get_pull_request(client, pr_url: str, token: str | None = None) -> PullRequest:
+	from ..fetch import get_repo_dir, git_auth_url, shallow_clone_or_fetch
+
 	owner, repo_name, pr_number = parse_pr_url(pr_url)
 	url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}'
 	response = client.get(url)
 	response.raise_for_status()
 	pr_data = response.json()
+
+	branch_name = pr_data['head']['ref']
+
+	repo_dir = get_repo_dir('forgejo', owner, repo_name)
+	auth_url = git_auth_url(pr_url, token)
+	shallow_clone_or_fetch(repo_dir, auth_url, branch_name)
+
 	commits_url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/pulls/{pr_number}/commits'
 	commits_response = client.get(commits_url)
 	commits_response.raise_for_status()
@@ -85,31 +83,21 @@ def get_pull_request(client, pr_url: str) -> PullRequest:
 		repo_id=repo_name,
 		author_username=user_login,
 		author_name=user_name,
-		files_dir=tmpdir,
+		repo_dir=repo_dir,
+		branch_name=branch_name,
 		files=[],
 	)
 
 	info(f'Найден PR #{pr_number} в репозитории {owner}/{repo_name}')
 
-	head_sha = pr_data['head'].get('sha')
 	for file_info in files:
 		filename = file_info['filename']
 		if not any(filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
 			continue
-		try:
-			raw_url = f'{client.base_url}/api/v1/repos/{owner}/{repo_name}/raw/{filename}'
-			params = {'ref': head_sha} if head_sha else {}
-			file_response = client.get(raw_url, params=params)
-			if file_response.status_code == 200:
-				local_path = os.path.join(tmpdir, filename)
-				os.makedirs(os.path.dirname(local_path), exist_ok=True)
-				with open(local_path, 'wb') as f:
-					f.write(file_response.content)
-				pr_obj.files.append(local_path)
-		except Exception as e:
-			warning(f'Не удалось скачать {filename}: {e}')
-			continue
+		local_path = repo_dir / filename
+		if local_path.exists():
+			pr_obj.files.append(local_path)
 
 	if pr_obj.files:
-		info(f'Загружены файлы: {", ".join(os.path.basename(f) for f in pr_obj.files)}')
+		info(f'Найдены файлы: {", ".join(str(f.relative_to(repo_dir)) for f in pr_obj.files)}')
 	return pr_obj
