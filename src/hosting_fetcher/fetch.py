@@ -41,8 +41,8 @@ def git_auth_url(pr_url: str, token: str | None) -> str:
 	path_parts = parsed.path.strip('/').split('/')
 	owner, repo_name = path_parts[0], path_parts[1]
 	if token:
-		return f'{parsed.scheme}://{token}@{parsed.netloc}/{owner}/{repo_name}.git'
-	return f'{parsed.scheme}://{parsed.netloc}/{owner}/{repo_name}.git'
+		return f'{parsed.scheme}://{token}@{parsed.netloc}/{owner}/{repo_name}'
+	return f'{parsed.scheme}://{parsed.netloc}/{owner}/{repo_name}'
 
 
 def shallow_clone_or_fetch(repo_dir: Path, auth_url: str, branch: str):
