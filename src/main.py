@@ -9,7 +9,7 @@ from .linters.custom_runner import CustomRulesWrapper
 from .linters import LinterFactory
 from .linters import options as linter_options
 from .linters.custom_rules import RuleFactory
-from .hosting_fetcher import login, get_pull_request
+from .hosting_fetcher import login, get_pull_request, switch_branch
 from .logger import info, warning, error, set_quiet
 from .reports import ReportGenerator, OPTION_SORT_MESSAGES_CHOICES, OPTION_SORT_MESSAGES_DEFAULT
 
@@ -77,6 +77,8 @@ def collect_pr_urls(args):
 def process_pull_request(g, token, pr) -> list | None:
 	if not pr.files:
 		return None
+
+	switch_branch(pr.repo_dir, pr.branch_name)
 
 	linter_options.repo_dir = str(pr.repo_dir)
 

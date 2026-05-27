@@ -63,7 +63,7 @@ def shallow_clone_or_fetch(repo_dir: Path, auth_url: str, branch: str):
 
 def switch_branch(repo_dir: Path, branch: str):
 	subprocess.run(
-		['git', '-C', str(repo_dir), 'checkout', '-B', branch, f'origin/{branch}'],
+		['git', '-C', str(repo_dir), 'switch', branch],
 		check=True, capture_output=True
 	)
 
